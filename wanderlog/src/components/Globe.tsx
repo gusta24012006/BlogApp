@@ -24,6 +24,7 @@ interface GlobeProps {
   visitedCountries: string[]
   activeContinent: string | null
   onContinentClick: (name: string) => void
+  onCountryClick?: (countryName: string) => void
   userLocation?: string
 }
 
@@ -148,9 +149,10 @@ function buildEquirectTexture(geojson: any, visitedNames: Set<string>) {
   return canvas
 }
 
-export default function Globe({ visitedCountries, activeContinent, onContinentClick, userLocation }: GlobeProps) {
+export default function Globe({ visitedCountries, activeContinent, onContinentClick, onCountryClick, userLocation }: GlobeProps) {
   const mountRef = useRef<HTMLDivElement>(null)
   const sceneState = useRef<any>({})
+  const geojsonRef = useRef<any>(null)
   const visitedRef = useRef<string[]>(visitedCountries)
   visitedRef.current = visitedCountries
   const locationRef = useRef<string | undefined>(userLocation)
@@ -321,12 +323,17 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
     let velY = 0.0025, velX = 0
     let downPos: { x: number; y: number } | null = null
 
+    let downTime = 0
+    let velYAtDown = 0
     const onDown = (e: any) => {
       isDragging = true
+      downTime = Date.now()
+      velYAtDown = Math.abs(velY)  // guardar ANTES de modificar
       const t = e.touches ? e.touches[0] : e
       lastX = t.clientX; lastY = t.clientY
       downPos = { x: t.clientX, y: t.clientY }
-      velX = 0; velY = 0
+      velX = 0
+      // NÃO modificar velY aqui — só parar no onUp se foi clique
     }
     const onMove = (e: any) => {
       if (!isDragging) return
@@ -361,6 +368,79 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
 
     const raycaster = new THREE.Raycaster()
     const mouse = new THREE.Vector2()
+
+    // Testar se ponto está dentro de um polígono GeoJSON (ray casting 2D)
+    const pointInPolygon = (px: number, py: number, ring: number[][]) => {
+      let inside = false
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const xi = ring[i][0], yi = ring[i][1]
+        const xj = ring[j][0], yj = ring[j][1]
+        const intersect = ((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)
+        if (intersect) inside = !inside
+      }
+      return inside
+    }
+
+    // Mapa: nome GeoJSON -> nome na base de dados
+    const NAME_MAP: Record<string, string> = {
+      'Bosnia and Herzegovina': 'Bosnia and Herz.',
+      'Central African Republic': 'Central African Rep.',
+      'Democratic Republic of the Congo': 'Dem. Rep. Congo',
+      'Republic of the Congo': 'Congo',
+      'Dominican Republic': 'Dominican Rep.',
+      'Equatorial Guinea': 'Eq. Guinea',
+      'Czech Republic': 'Czechia',
+      'Macedonia': 'North Macedonia',
+      'South Sudan': 'S. Sudan',
+      'United States of America': 'United States',
+      'Guinea Bissau': 'Guinea-Bissau',
+      'Ivory Coast': 'Ivory Coast',
+      'East Timor': 'Timor-Leste',
+      'England': 'United Kingdom',
+    }
+
+    const getCountryAtLatLon = (lat: number, lon: number) => {
+      if (!geojsonRef.current) return null
+      for (const f of geojsonRef.current.features) {
+        const polys = f.geometry.type === 'Polygon'
+          ? [f.geometry.coordinates]
+          : f.geometry.coordinates
+        for (const poly of polys) {
+          if (pointInPolygon(lon, lat, poly[0])) {
+            const rawName = f.properties?.name || f.properties?.NAME || ''
+            return (NAME_MAP[rawName] || rawName) as string
+          }
+        }
+      }
+      return null
+    }
+
+    // Ripple effect canvas
+    const ripples: { x: number; y: number; r: number; alpha: number }[] = []
+    const rippleCanvas = document.createElement('canvas')
+    rippleCanvas.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:5;'
+    mount.appendChild(rippleCanvas)
+    const rippleCtx = rippleCanvas.getContext('2d')!
+    const animateRipple = () => {
+      if (ripples.length === 0) return
+      rippleCanvas.width = mount.clientWidth
+      rippleCanvas.height = mount.clientHeight
+      rippleCtx.clearRect(0, 0, rippleCanvas.width, rippleCanvas.height)
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const rp = ripples[i]
+        rp.r += 4
+        rp.alpha -= 0.025
+        if (rp.alpha <= 0) { ripples.splice(i, 1); continue }
+        rippleCtx.beginPath()
+        rippleCtx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2)
+        rippleCtx.strokeStyle = `rgba(255, 217, 61, ${rp.alpha})`
+        rippleCtx.lineWidth = 2.5
+        rippleCtx.stroke()
+      }
+      if (ripples.length > 0) requestAnimationFrame(animateRipple)
+      else rippleCtx.clearRect(0, 0, rippleCanvas.width, rippleCanvas.height)
+    }
+
     dom.addEventListener('click', (e: MouseEvent) => {
       if (!downPos) return
       const rect = dom.getBoundingClientRect()
@@ -376,6 +456,57 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
       let lon = Math.atan2(norm.x, norm.z) * 180 / Math.PI + 90
       while (lon < -180) lon += 360
       while (lon > 180) lon -= 360
+
+      // Tentar encontrar país visitado
+      let lonGeo = lon - 179
+      while (lonGeo < -180) lonGeo += 360
+      while (lonGeo > 180) lonGeo -= 360
+      const countryName = getCountryAtLatLon(lat, lonGeo)
+      const isVisited = countryName && visitedRef.current.includes(countryName)
+
+      // Só disparar se foi toque rápido, sem drag, e globo estava quase parado
+      const dragDist = downPos ? Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) : 999
+      const tapDuration = Date.now() - downTime
+      const wasSlowEnough = Math.abs(velYAtDown) < 0.004
+      const isTap = dragDist < 8 && tapDuration < 400 && wasSlowEnough
+
+      if (isVisited && countryName && onCountryClick && isTap) {
+        velY = 0
+        velX = 0
+
+        // Ripple dourado no ponto de clique
+        const clickX = e.clientX - rect.left
+        const clickY = e.clientY - rect.top
+        ripples.push({ x: clickX, y: clickY, r: 10, alpha: 0.9 })
+        ripples.push({ x: clickX, y: clickY, r: 0, alpha: 0.6 })
+        ripples.push({ x: clickX, y: clickY, r: 20, alpha: 0.4 })
+        animateRipple()
+
+        // Zoom para o país — lat sem offset, só lon precisa de calibração
+        const targetY = (-lonGeo - 87) * Math.PI / 180
+        const targetX = lat * Math.PI / 180
+        sceneState.current.targetRot = { x: targetX, y: targetY }
+        sceneState.current.zooming = true
+        sceneState.current.continentActive = true
+        sceneState.current.targetZ = 5.0
+
+        // Após animação de zoom, fade e navegar
+        setTimeout(() => {
+          const canvas = renderer.domElement
+          let opacity = 1
+          const fadeOut = setInterval(() => {
+            opacity -= 0.05
+            canvas.style.opacity = String(Math.max(0, opacity))
+            if (opacity <= 0) {
+              clearInterval(fadeOut)
+              onCountryClick(countryName)
+            }
+          }, 16)
+        }, 900)
+        return
+      }
+
+      // Clique normal — detetar continente
       let best: string | null = null, bestDist = Infinity
       Object.entries(CONTINENTS).forEach(([name, c]) => {
         const dlon = ((lon - c.lon + 540) % 360) - 180
@@ -505,16 +636,29 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
     }
 
     let cancelled = false
-    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+    // Usar Natural Earth GeoJSON que tem nomes nos features
+    fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson')
       .then(r => r.json())
-      .then(topo => {
+      .then(geojson => {
         if (cancelled) return
-        const topojson = (window as any).topojson
-        const geojson = topojson.feature(topo, topo.objects.countries)
         geojsonCache = geojson
+        geojsonRef.current = geojson
         applyTexture(geojson)
       })
-      .catch(err => console.error('[globe] load failed', err))
+      .catch(() => {
+        // Fallback: world-atlas com lookup de nomes por ID
+        fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+          .then(r => r.json())
+          .then(topo => {
+            if (cancelled) return
+            const topojson = (window as any).topojson
+            const geojson = topojson.feature(topo, topo.objects.countries)
+            geojsonCache = geojson
+            geojsonRef.current = geojson
+            applyTexture(geojson)
+          })
+          .catch(err => console.error('[globe] load failed', err))
+      })
 
     return () => {
       cancelled = true

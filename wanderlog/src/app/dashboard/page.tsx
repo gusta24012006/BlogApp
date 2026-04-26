@@ -183,6 +183,16 @@ export default function Dashboard() {
             visitedCountries={visitedCountries}
             activeContinent={activeContinent}
             onContinentClick={(name) => setActiveContinent(activeContinent === name ? null : name)}
+            onCountryClick={async (countryName) => {
+              // Buscar o country_code a partir do nome
+              const { data } = await supabase
+                .from('countries_visited')
+                .select('country_code')
+                .eq('country_name', countryName)
+                .eq('user_id', userId)
+                .single()
+              if (data) router.push(`/blog/country/${data.country_code}`)
+            }}
             userLocation={profile?.location}
           />
         ) : (
