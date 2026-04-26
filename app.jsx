@@ -18,13 +18,24 @@ const PROFILE = {
 const VISITED_NAMES = new Set(['Portugal', 'Japan', 'Morocco', 'France', 'Brazil', 'Thailand']);
 
 // Continent centroids (lat, lon)
+// Coordenadas para DETECCAO (lon = lon_geografico + 172, sistema do raycasting)
 const CONTINENTS = {
-  Europe:        { lat: 50,  lon: 10  },
-  Asia:          { lat: 35,  lon: 100 },
-  Africa:        { lat: 5,   lon: 20  },
-  'N. America':  { lat: 45,  lon: -100 },
-  'S. America':  { lat: -15, lon: -60 },
-  Oceania:       { lat: -25, lon: 135 },
+  Europe:        { lat: 52,  lon: -173 },
+  Asia:          { lat: 45,  lon: -98  },
+  Africa:        { lat: 5,   lon: -166 },
+  'N. America':  { lat: 48,  lon: 72   },
+  'S. America':  { lat: -15, lon: 114  },
+  Oceania:       { lat: -28, lon: -50  },
+};
+
+// Coordenadas para ZOOM (lon geografico real)
+const CONTINENT_ZOOM = {
+  Europe:        { lat: 52,  lon: 15   },
+  Asia:          { lat: 45,  lon: 90   },
+  Africa:        { lat: 5,   lon: 22   },
+  'N. America':  { lat: 48,  lon: -100 },
+  'S. America':  { lat: -15, lon: -58  },
+  Oceania:       { lat: -28, lon: 138  },
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -270,6 +281,7 @@ function Globe({ onContinentClick, activeContinent }) {
   const mountRef = useRef(null);
   const sceneState = useRef({});
 
+
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
@@ -362,9 +374,9 @@ function Globe({ onContinentClick, activeContinent }) {
     const onUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
-      // Resume gentle auto-rotate after a beat
+      // Só retoma auto-rotate se não há continente seleccionado
       setTimeout(() => {
-        if (!sceneState.current.zooming && Math.abs(velY) < 0.001) velY = 0.0025;
+        if (!sceneState.current.zooming && !sceneState.current.continentActive && Math.abs(velY) < 0.001) velY = 0.0025;
       }, 1500);
     };
 
@@ -387,16 +399,21 @@ function Globe({ onContinentClick, activeContinent }) {
       raycaster.setFromCamera(mouse, camera);
       const hits = raycaster.intersectObject(baseMesh);
       if (!hits.length) return;
-      const localPt = hits[0].point.clone();
-      globeGroup.worldToLocal(localPt);
-      const lat = 90 - Math.acos(Math.max(-1, Math.min(1, localPt.y / R))) * 180 / Math.PI;
-      let lon = Math.atan2(localPt.z, localPt.x) * 180 / Math.PI - 180;
+      const worldPt = hits[0].point.clone();
+      const localPt = globeGroup.worldToLocal(worldPt);
+      const norm = localPt.clone().normalize();
+      const lat = Math.asin(Math.max(-1, Math.min(1, norm.y))) * 180 / Math.PI;
+      let lon = Math.atan2(norm.x, norm.z) * 180 / Math.PI + 90;
       while (lon < -180) lon += 360;
       while (lon > 180) lon -= 360;
       let best = null, bestDist = Infinity;
       Object.entries(CONTINENTS).forEach(([name, c]) => {
-        let dlon = ((lon - c.lon + 540) % 360) - 180;
-        const d = Math.hypot(lat - c.lat, dlon);
+        const dlon = ((lon - c.lon + 540) % 360) - 180;
+        const dlat = lat - c.lat;
+        const a = Math.sin(dlat * Math.PI / 360) ** 2 +
+                  Math.cos(lat * Math.PI / 180) * Math.cos(c.lat * Math.PI / 180) *
+                  Math.sin(dlon * Math.PI / 360) ** 2;
+        const d = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         if (d < bestDist) { bestDist = d; best = name; }
       });
       if (best) onContinentClick(best);
@@ -408,7 +425,7 @@ function Globe({ onContinentClick, activeContinent }) {
       // Inertia
       rotX += velX;
       velX *= 0.94;
-      if (!isDragging && !sceneState.current.targetRot && !sceneState.current.zooming && velY !== 0) {
+      if (!isDragging && !sceneState.current.targetRot && !sceneState.current.zooming && !sceneState.current.continentActive && velY !== 0) {
         // Gentle auto-rotate só quando não há continente seleccionado
         rotY += velY;
         velY = Math.abs(velY) > 0.0026 ? velY * 0.96 : 0.0025;
@@ -450,18 +467,18 @@ function Globe({ onContinentClick, activeContinent }) {
 
     sceneState.current.zoomTo = (lat, lon) => {
       sceneState.current.zooming = true;
-      const targetY = -lon * Math.PI / 180;
-      const targetX = lat * Math.PI / 180;
+      sceneState.current.continentActive = true;
+      // Para por lon em frente da camara (+z): rotY = (90 - lon) * PI/180
+      const targetY = (-lon - 83) * Math.PI / 180;
+      const targetX = (lat - 7) * Math.PI / 180;
       sceneState.current.targetRot = { x: targetX, y: targetY };
-      // Zoom suave — não tão próximo
-      sceneState.current.targetZ = 6.8;
-      // Para a rotação automática
+      sceneState.current.targetZ = 7.5;
       velY = 0;
     };
     sceneState.current.resetZoom = () => {
       sceneState.current.targetZ = 8.5;
       sceneState.current.zooming = false;
-      // Retoma rotação suave
+      sceneState.current.continentActive = false;
       velY = 0.0025;
     };
 
@@ -531,7 +548,7 @@ function Globe({ onContinentClick, activeContinent }) {
       sceneState.current.resetZoom?.();
       return;
     }
-    const c = CONTINENTS[activeContinent];
+    const c = CONTINENT_ZOOM[activeContinent];
     if (c) sceneState.current.zoomTo?.(c.lat, c.lon);
   }, [activeContinent]);
 
@@ -558,13 +575,13 @@ function GlobeOverlay({ activeContinent, onReset }) {
       }}>
         <div style={{
           fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-          fontSize: 10, color: 'rgba(245, 240, 232, 0.55)',
+          fontSize: 10, color: 'rgba(80, 65, 45, 0.6)',
           textTransform: 'uppercase', letterSpacing: 2,
         }}>Travel Map</div>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 6,
           fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-          fontSize: 10, color: 'rgba(245, 240, 232, 0.55)',
+          fontSize: 10, color: 'rgba(80, 65, 45, 0.6)',
           textTransform: 'uppercase', letterSpacing: 2,
         }}>
           <span style={{
@@ -583,11 +600,11 @@ function GlobeOverlay({ activeContinent, onReset }) {
         }}>
           <button onClick={onReset} style={{
             padding: '6px 12px', borderRadius: 100,
-            border: '1px solid rgba(255, 217, 61, 0.4)',
-            background: 'rgba(20, 25, 35, 0.7)',
+            border: '1px solid rgba(180, 140, 0, 0.4)',
+            background: 'rgba(255, 248, 220, 0.85)',
             backdropFilter: 'blur(10px)',
             fontFamily: '-apple-system, system-ui, sans-serif',
-            fontSize: 11, fontWeight: 600, color: '#FFD93D',
+            fontSize: 11, fontWeight: 600, color: '#8A6800',
             cursor: 'pointer', letterSpacing: 0.3,
           }}>← {activeContinent}</button>
         </div>
@@ -605,7 +622,7 @@ function GlobeOverlay({ activeContinent, onReset }) {
           <div key={item.l} style={{
             display: 'flex', alignItems: 'center', gap: 8,
             fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-            fontSize: 10, color: 'rgba(245, 240, 232, 0.7)',
+            fontSize: 10, color: 'rgba(80, 65, 45, 0.7)',
             letterSpacing: 1,
           }}>
             <span style={{
@@ -622,7 +639,7 @@ function GlobeOverlay({ activeContinent, onReset }) {
         position: 'absolute', bottom: 16, right: 16,
         pointerEvents: 'none', zIndex: 5,
         fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-        fontSize: 9, color: 'rgba(245, 240, 232, 0.45)',
+        fontSize: 9, color: 'rgba(80, 65, 45, 0.4)',
         letterSpacing: 1.5, textTransform: 'uppercase',
       }}>
         Drag · Tap continent
@@ -637,28 +654,14 @@ function GlobeOverlay({ activeContinent, onReset }) {
 function GlobeSection() {
   const [activeContinent, setActiveContinent] = useState(null);
 
+
   return (
     <div style={{
       flex: 1, position: 'relative',
-      background: 'radial-gradient(ellipse at 50% 40%, #1a2030 0%, #0a0d14 80%)',
+      background: 'radial-gradient(ellipse at 50% 35%, #EDE8DF 0%, #D8D0C4 100%)',
       overflow: 'hidden',
       minHeight: 0,
     }}>
-      {/* Stars */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: `
-          radial-gradient(1px 1px at 20% 30%, rgba(255,217,61,0.4) 50%, transparent 100%),
-          radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,0.3) 50%, transparent 100%),
-          radial-gradient(1px 1px at 40% 80%, rgba(255,217,61,0.3) 50%, transparent 100%),
-          radial-gradient(1px 1px at 85% 20%, rgba(255,255,255,0.25) 50%, transparent 100%),
-          radial-gradient(1px 1px at 15% 70%, rgba(255,255,255,0.2) 50%, transparent 100%),
-          radial-gradient(1px 1px at 60% 25%, rgba(255,255,255,0.18) 50%, transparent 100%),
-          radial-gradient(1px 1px at 90% 75%, rgba(255,217,61,0.25) 50%, transparent 100%)
-        `,
-        opacity: 0.7,
-        pointerEvents: 'none',
-      }} />
       <Globe
         activeContinent={activeContinent}
         onContinentClick={setActiveContinent}
