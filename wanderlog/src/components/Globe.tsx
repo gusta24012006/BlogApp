@@ -26,6 +26,58 @@ interface GlobeProps {
   onContinentClick: (name: string) => void
 }
 
+function buildReliefTexture(geojson: any, visitedNames: Set<string>) {
+  const W = 4096, H = 2048
+  const canvas = document.createElement('canvas')
+  canvas.width = W; canvas.height = H
+  const ctx = canvas.getContext('2d')!
+
+  // Fundo completamente transparente
+  ctx.clearRect(0, 0, W, H)
+
+  const project = (lon: number, lat: number): [number, number] => [
+    (lon + 180) / 360 * W,
+    (90 - lat) / 180 * H
+  ]
+
+  geojson.features.forEach((f: any) => {
+    if (!visitedNames.has(f.properties.name)) return
+    const polys = f.geometry.type === 'Polygon'
+      ? [f.geometry.coordinates]
+      : f.geometry.coordinates
+    polys.forEach((poly: any) => {
+      ctx.beginPath()
+      poly.forEach((ring: any) => {
+        let penDown = false
+        for (let i = 0; i < ring.length; i++) {
+          const [x, y] = project(ring[i][0], ring[i][1])
+          if (!penDown) { ctx.moveTo(x, y); penDown = true }
+          else {
+            const [px] = project(ring[i - 1][0], ring[i - 1][1])
+            if (Math.abs(x - px) > W / 2) ctx.moveTo(x, y)
+            else ctx.lineTo(x, y)
+          }
+        }
+        ctx.closePath()
+      })
+      // Fill dourado com glow
+      ctx.save()
+      ctx.shadowColor = '#FFD93D'
+      ctx.shadowBlur = 30
+      ctx.fillStyle = '#FFE066'
+      ctx.fill('evenodd')
+      ctx.restore()
+      // Fronteira escura por cima para separar países vizinhos
+      ctx.strokeStyle = 'rgba(180, 120, 0, 0.85)'
+      ctx.lineWidth = 3.5
+      ctx.lineJoin = 'round'
+      ctx.stroke()
+    })
+  })
+
+  return canvas
+}
+
 function buildEquirectTexture(geojson: any, visitedNames: Set<string>) {
   const W = 4096, H = 2048
   const canvas = document.createElement('canvas')
@@ -154,6 +206,16 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
     })
     const baseMesh = new THREE.Mesh(new THREE.SphereGeometry(R, 96, 96), oceanMat)
     globeGroup.add(baseMesh)
+
+    // Esfera de relevo — ligeiramente maior, só países visitados
+    const reliefMat = new THREE.MeshPhongMaterial({
+      transparent: true, opacity: 0,
+      depthWrite: false,
+      shininess: 40,
+      specular: new THREE.Color(0xFFD93D).multiplyScalar(0.3),
+    })
+    const reliefMesh = new THREE.Mesh(new THREE.SphereGeometry(R * 1.03, 96, 96), reliefMat)
+    globeGroup.add(reliefMesh)
 
     let isDragging = false
     let lastX = 0, lastY = 0
@@ -296,6 +358,8 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
 
     const applyTexture = (geojson: any) => {
       const visited = new Set(visitedRef.current)
+
+      // Textura base
       const baseCanvas = buildEquirectTexture(geojson, visited)
       const baseTex = new THREE.CanvasTexture(baseCanvas)
       baseTex.needsUpdate = true
@@ -313,6 +377,28 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
         emissiveIntensity: 0.55,
       })
       baseMesh.material.needsUpdate = true
+
+      // Textura de relevo — só países visitados, fundo transparente
+      if (visited.size > 0) {
+        const reliefCanvas = buildReliefTexture(geojson, visited)
+        const reliefTex = new THREE.CanvasTexture(reliefCanvas)
+        reliefTex.needsUpdate = true
+        reliefTex.minFilter = THREE.LinearFilter
+        reliefTex.magFilter = THREE.LinearFilter
+        reliefTex.generateMipmaps = false
+        reliefMesh.material.dispose()
+        reliefMesh.material = new THREE.MeshPhongMaterial({
+          map: reliefTex,
+          alphaMap: reliefTex,
+          transparent: true,
+          depthWrite: false,
+          shininess: 40,
+          emissive: new THREE.Color(0xFFD93D),
+          emissiveMap: reliefTex,
+          emissiveIntensity: 0.3,
+        })
+        reliefMesh.material.needsUpdate = true
+      }
     }
 
     // Expor rebake para useEffect externo
