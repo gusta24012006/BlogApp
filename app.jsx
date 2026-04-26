@@ -465,14 +465,16 @@ function Globe({ onContinentClick, activeContinent }) {
     };
     tick();
 
-    sceneState.current.zoomTo = (lat, lon) => {
+    sceneState.current.zoomTo = (lat, lon, name) => {
       sceneState.current.zooming = true;
       sceneState.current.continentActive = true;
       // Para por lon em frente da camara (+z): rotY = (90 - lon) * PI/180
       const targetY = (-lon - 83) * Math.PI / 180;
       const targetX = (lat - 7) * Math.PI / 180;
       sceneState.current.targetRot = { x: targetX, y: targetY };
-      sceneState.current.targetZ = 7.5;
+      // Asia precisa de mais distancia por ser maior
+      const zoomByContinent = { 'Asia': 9.5 };
+      sceneState.current.targetZ = zoomByContinent[name] || 7.5;
       velY = 0;
     };
     sceneState.current.resetZoom = () => {
@@ -549,7 +551,7 @@ function Globe({ onContinentClick, activeContinent }) {
       return;
     }
     const c = CONTINENT_ZOOM[activeContinent];
-    if (c) sceneState.current.zoomTo?.(c.lat, c.lon);
+    if (c) sceneState.current.zoomTo?.(c.lat, c.lon, activeContinent);
   }, [activeContinent]);
 
   return (
