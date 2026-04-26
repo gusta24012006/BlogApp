@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import dynamic from 'next/dynamic'
 import AddCountryModal from '@/components/AddCountryModal'
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [userId, setUserId] = useState<string>('')
+  const router = useRouter()
 
   useEffect(() => {
     const init = async () => {
@@ -96,20 +98,25 @@ export default function Dashboard() {
             <div style={{ fontSize: 12, color: '#8A7A65', marginTop: 4, fontFamily: 'monospace' }}>
               @{profile?.username}
             </div>
+            {profile?.location && (
+              <div style={{ fontSize: 12, color: '#8A7A65', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span>📍</span> {profile.location}
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', gap: 8, alignSelf: 'flex-start' }}>
+            <button onClick={() => router.push('/profile/edit')} style={{
+              padding: '7px 14px', borderRadius: 100,
+              border: '1px solid rgba(184,168,152,0.5)', background: 'transparent',
+              fontSize: 12, fontWeight: 500, color: '#8A7A65',
+              cursor: 'pointer',
+            }}>Editar perfil</button>
             <button onClick={() => setShowModal(true)} style={{
               padding: '7px 14px', borderRadius: 100,
               border: 'none', background: '#FFB800',
               fontSize: 12, fontWeight: 600, color: '#2A2520',
               cursor: 'pointer',
             }}>+ País</button>
-            <button onClick={handleSignOut} style={{
-              padding: '7px 14px', borderRadius: 100,
-              border: '1px solid #2A2520', background: 'transparent',
-              fontSize: 12, fontWeight: 600, color: '#2A2520',
-              cursor: 'pointer',
-            }}>Sair</button>
           </div>
         </div>
 
@@ -176,6 +183,7 @@ export default function Dashboard() {
             visitedCountries={visitedCountries}
             activeContinent={activeContinent}
             onContinentClick={(name) => setActiveContinent(activeContinent === name ? null : name)}
+            userLocation={profile?.location}
           />
         ) : (
           <div style={{

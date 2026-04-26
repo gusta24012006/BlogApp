@@ -24,6 +24,7 @@ interface GlobeProps {
   visitedCountries: string[]
   activeContinent: string | null
   onContinentClick: (name: string) => void
+  userLocation?: string
 }
 
 function buildReliefTexture(geojson: any, visitedNames: Set<string>) {
@@ -147,11 +148,13 @@ function buildEquirectTexture(geojson: any, visitedNames: Set<string>) {
   return canvas
 }
 
-export default function Globe({ visitedCountries, activeContinent, onContinentClick }: GlobeProps) {
+export default function Globe({ visitedCountries, activeContinent, onContinentClick, userLocation }: GlobeProps) {
   const mountRef = useRef<HTMLDivElement>(null)
   const sceneState = useRef<any>({})
   const visitedRef = useRef<string[]>(visitedCountries)
   visitedRef.current = visitedCountries
+  const locationRef = useRef<string | undefined>(userLocation)
+  locationRef.current = userLocation
 
   useEffect(() => {
     const mount = mountRef.current
@@ -216,6 +219,101 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
     })
     const reliefMesh = new THREE.Mesh(new THREE.SphereGeometry(R * 1.03, 96, 96), reliefMat)
     globeGroup.add(reliefMesh)
+
+    // Pushpin de localização atual
+    let locationPinGroup: any = null
+    const addLocationPin = (lat: number, lon: number) => {
+      if (locationPinGroup) { globeGroup.remove(locationPinGroup); locationPinGroup = null }
+      const group = new THREE.Group()
+
+      const redMat = new THREE.MeshPhongMaterial({
+        color: 0xdd2222, emissive: 0xaa0000, emissiveIntensity: 0.3,
+        shininess: 120, specular: new THREE.Color(0xffffff).multiplyScalar(0.6),
+      })
+      const silverMat = new THREE.MeshPhongMaterial({
+        color: 0xcccccc, shininess: 200, specular: new THREE.Color(0xffffff),
+      })
+
+      // Cabeça achatada fofa — pequena e redonda
+      const headGeo = new THREE.SphereGeometry(0.042, 16, 14)
+      headGeo.scale(1, 0.7, 1)
+      const head = new THREE.Mesh(headGeo, redMat)
+      head.position.y = -0.11
+      group.add(head)
+
+      // Highlight cute na cabeça
+      const highlightGeo = new THREE.SphereGeometry(0.014, 8, 8)
+      const highlightMat = new THREE.MeshPhongMaterial({
+        color: 0xff9999, emissive: 0xff6666, emissiveIntensity: 0.6,
+        transparent: true, opacity: 0.7, shininess: 200,
+      })
+      const highlight = new THREE.Mesh(highlightGeo, highlightMat)
+      highlight.position.set(-0.012, -0.085, 0.025)
+      group.add(highlight)
+
+      // Pescoço fino
+      const neckGeo = new THREE.CylinderGeometry(0.009, 0.015, 0.03, 10)
+      const neck = new THREE.Mesh(neckGeo, redMat)
+      neck.position.y = -0.078
+      group.add(neck)
+
+      // Corpo redondo (barriga fofa)
+      const bodyGeo = new THREE.SphereGeometry(0.033, 14, 12)
+      bodyGeo.scale(1, 1.15, 1)
+      const body = new THREE.Mesh(bodyGeo, redMat)
+      body.position.y = -0.037
+      group.add(body)
+
+      // Ponta metálica fina
+      const tipGeo = new THREE.ConeGeometry(0.005, 0.07, 8)
+      const tip = new THREE.Mesh(tipGeo, silverMat)
+      tip.position.y = 0.035
+      group.add(tip)
+
+      // Anel de glow subtil
+      const ringGeo = new THREE.RingGeometry(0.038, 0.052, 24)
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0xff4444, transparent: true, opacity: 0.2, side: THREE.DoubleSide,
+      })
+      const ring = new THREE.Mesh(ringGeo, ringMat)
+      ring.position.y = 0.065
+      group.add(ring)
+
+      // Posicionar no globo — a ponta toca na superfície
+      const phi = (90 - lat) * Math.PI / 180
+      const theta = (lon + 180) * Math.PI / 180
+      const pos = new THREE.Vector3(
+        -Math.sin(phi) * Math.cos(theta),
+        Math.cos(phi),
+        Math.sin(phi) * Math.sin(theta)
+      ).multiplyScalar(R * 1.02)
+      group.position.copy(pos)
+      group.lookAt(new THREE.Vector3(0, 0, 0))
+      group.rotateX(Math.PI / 2)  // ponta aponta para o globo
+      locationPinGroup = group
+      globeGroup.add(group)
+    }
+
+    // Geocoding da localização
+    const geocodeLocation = async (location: string) => {
+      if (!location) return
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`)
+        const data = await res.json()
+        if (data.length > 0) {
+          addLocationPin(parseFloat(data[0].lat), parseFloat(data[0].lon))
+          sceneState.current.locationFound = true
+        } else {
+          sceneState.current.locationFound = false
+          console.warn('[globe] Localização não encontrada:', location)
+        }
+      } catch (e) {
+        sceneState.current.locationFound = false
+        console.warn('Geocoding failed', e)
+      }
+    }
+
+    if (locationRef.current) geocodeLocation(locationRef.current)
 
     let isDragging = false
     let lastX = 0, lastY = 0
