@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import PostActions from '@/components/PostActions'
 import { supabase } from '@/lib/supabase'
 
 interface Block {
@@ -116,6 +117,7 @@ export default function CountryBlogPage() {
   const [loading, setLoading] = useState(true)
   const [isOwner, setIsOwner] = useState(false)
   const [countryName, setCountryName] = useState('')
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>()
 
   useEffect(() => {
     const load = async () => {
@@ -133,6 +135,8 @@ export default function CountryBlogPage() {
         setPost(data)
         setCountryName(data.country_name)
         setIsOwner(user?.id === data.user_id)
+        setCurrentUserId(user?.id)
+        setLoading(false)
       } else {
         // Não existe blog — ir para o editor
         // Buscar nome do país a partir do código
@@ -145,10 +149,7 @@ export default function CountryBlogPage() {
 
         const name = countryData?.country_name || countryCode
         router.replace(`/blog/new?country=${countryCode}&name=${encodeURIComponent(name)}`)
-        return
       }
-
-      setLoading(false)
     }
     load()
   }, [countryCode, router])
@@ -276,6 +277,10 @@ export default function CountryBlogPage() {
           </div>
         )}
       </div>
+
+      {/* Likes e comentários */}
+      <PostActions postId={post.id} userId={currentUserId} />
+
     </div>
   )
 }
