@@ -107,9 +107,19 @@ export default function FeedPage() {
         followingCountriesAllRef.current = unviewedCountries
       }
 
-      // "Encontrar" — posts de pessoas que não segues
-      let discoverQuery = supabase.from('posts').select('country_name').eq('published', true).neq('user_id', user.id)
+      // "Encontrar" — posts de pessoas públicas que não segues
+      // Buscar IDs de utilizadores privados
+      const { data: privateUsers } = await supabase
+        .from('profiles').select('id').eq('is_private', true)
+      const privateIds = privateUsers?.map((p: any) => p.id) || []
+
+      let discoverQuery = supabase
+        .from('posts')
+        .select('country_name')
+        .eq('published', true)
+        .neq('user_id', user.id)
       if (followingIds.length > 0) discoverQuery = discoverQuery.not('user_id', 'in', `(${followingIds.join(',')})`)
+      if (privateIds.length > 0) discoverQuery = discoverQuery.not('user_id', 'in', `(${privateIds.join(',')})`)
       const { data: allPosts } = await discoverQuery
       discoverCountriesRef.current = [...new Set(allPosts?.map((p: any) => p.country_name) || [])]
 

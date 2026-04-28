@@ -13,14 +13,18 @@ interface Profile {
   bio?: string
 }
 
-function UserRow({ profile, currentUserId, initialFollowing }: {
+function UserRow({ profile, currentUserId, initialFollowing, isOwnProfile, currentTab, onRemove }: {
   profile: Profile
   currentUserId: string
   initialFollowing: boolean
+  isOwnProfile: boolean
+  currentTab: string
+  onRemove?: (id: string) => void
 }) {
   const router = useRouter()
   const [following, setFollowing] = useState(initialFollowing)
   const [loading, setLoading] = useState(false)
+  const [removed, setRemoved] = useState(false)
 
   const handleFollow = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -36,6 +40,8 @@ function UserRow({ profile, currentUserId, initialFollowing }: {
     }
     setLoading(false)
   }
+
+  if (removed) return null
 
   return (
     <div
@@ -74,20 +80,44 @@ function UserRow({ profile, currentUserId, initialFollowing }: {
 
       {/* Botão seguir — só se não é o próprio */}
       {currentUserId !== profile.id && (
-        <button
-          onClick={handleFollow}
-          disabled={loading}
-          style={{
-            padding: '7px 16px', borderRadius: 100, fontSize: 12, fontWeight: 600,
-            background: following ? 'transparent' : '#FFB800',
-            border: following ? '1px solid rgba(184,168,152,0.5)' : 'none',
-            color: following ? '#8A7A65' : '#2A2520',
-            cursor: 'pointer', flexShrink: 0,
-            opacity: loading ? 0.6 : 1, transition: 'all 0.2s',
-          }}
-        >
-          {following ? 'A seguir' : 'Seguir'}
-        </button>
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          {/* Botão remover seguidor — só aparece na tab followers E só para o próprio perfil */}
+          {isOwnProfile && currentTab === 'followers' && (
+            <button
+              onClick={async (e) => {
+                e.stopPropagation()
+                const { error, data } = await supabase.from('follows')
+                  .delete()
+                  .eq('follower_id', profile.id)
+                  .eq('following_id', currentUserId)
+                  .select()
+                if (!error) { setRemoved(true); onRemove?.(profile.id) }
+              }}
+              style={{
+                padding: '7px 14px', borderRadius: 100, fontSize: 12, fontWeight: 500,
+                background: 'transparent',
+                border: '1px solid rgba(226,75,74,0.3)',
+                color: '#C03B3A', cursor: 'pointer',
+              }}
+            >
+              Remover
+            </button>
+          )}
+          <button
+            onClick={handleFollow}
+            disabled={loading}
+            style={{
+              padding: '7px 16px', borderRadius: 100, fontSize: 12, fontWeight: 600,
+              background: following ? 'transparent' : '#FFB800',
+              border: following ? '1px solid rgba(184,168,152,0.5)' : 'none',
+              color: following ? '#8A7A65' : '#2A2520',
+              cursor: 'pointer',
+              opacity: loading ? 0.6 : 1, transition: 'all 0.2s',
+            }}
+          >
+            {following ? 'A seguir' : 'Seguir'}
+          </button>
+        </div>
       )}
     </div>
   )
@@ -216,6 +246,11 @@ export default function FollowsPage() {
             profile={profile}
             currentUserId={currentUserId}
             initialFollowing={followingIds.has(profile.id)}
+            isOwnProfile={currentUserId === profileId}
+            currentTab={tab}
+            onRemove={(id) => {
+              setProfiles(prev => prev.filter(p => p.id !== id))
+            }}
           />
         ))
       )}
