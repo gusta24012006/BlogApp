@@ -26,6 +26,9 @@ interface GlobeProps {
   onContinentClick: (name: string) => void
   onCountryClick?: (countryName: string) => void
   userLocation?: string
+  feedMode?: boolean
+  feedTab?: 'following' | 'discover'
+  onSceneReady?: (reset: () => void) => void
 }
 
 function buildReliefTexture(geojson: any, visitedNames: Set<string>) {
@@ -149,12 +152,14 @@ function buildEquirectTexture(geojson: any, visitedNames: Set<string>) {
   return canvas
 }
 
-export default function Globe({ visitedCountries, activeContinent, onContinentClick, onCountryClick, userLocation }: GlobeProps) {
+export default function Globe({ visitedCountries, activeContinent, onContinentClick, onCountryClick, userLocation, feedMode, feedTab, onSceneReady }: GlobeProps) {
   const mountRef = useRef<HTMLDivElement>(null)
   const sceneState = useRef<any>({})
   const geojsonRef = useRef<any>(null)
   const visitedRef = useRef<string[]>(visitedCountries)
   visitedRef.current = visitedCountries
+  const feedModeRef = useRef(feedMode)
+  feedModeRef.current = feedMode
   const locationRef = useRef<string | undefined>(userLocation)
   locationRef.current = userLocation
 
@@ -178,7 +183,7 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.setSize(W, H)
-    renderer.setClearColor(0x000000, 0)
+    renderer.setClearColor(feedMode ? 0x0d0d1a : 0x000000, feedMode ? 1 : 0)
     mount.appendChild(renderer.domElement)
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.6))
@@ -219,7 +224,9 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
       shininess: 40,
       specular: new THREE.Color(0xFFD93D).multiplyScalar(0.3),
     })
-    const reliefMesh = new THREE.Mesh(new THREE.SphereGeometry(R * 1.03, 96, 96), reliefMat)
+    // No feedMode sem relevo — esfera do mesmo tamanho
+    const reliefRadius = feedMode ? R * 1.001 : R * 1.03
+    const reliefMesh = new THREE.Mesh(new THREE.SphereGeometry(reliefRadius, 96, 96), reliefMat)
     globeGroup.add(reliefMesh)
 
     // Pushpin de localização atual
@@ -490,18 +497,23 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
         sceneState.current.continentActive = true
         sceneState.current.targetZ = 5.0
 
-        // Após animação de zoom, fade e navegar
+        // Após animação de zoom, chamar onCountryClick
         setTimeout(() => {
-          const canvas = renderer.domElement
-          let opacity = 1
-          const fadeOut = setInterval(() => {
-            opacity -= 0.05
-            canvas.style.opacity = String(Math.max(0, opacity))
-            if (opacity <= 0) {
-              clearInterval(fadeOut)
-              onCountryClick(countryName)
-            }
-          }, 16)
+          if (feedModeRef.current) {
+            // No feed não fazer fade — blog abre inline
+            onCountryClick(countryName)
+          } else {
+            const canvas = renderer.domElement
+            let opacity = 1
+            const fadeOut = setInterval(() => {
+              opacity -= 0.05
+              canvas.style.opacity = String(Math.max(0, opacity))
+              if (opacity <= 0) {
+                clearInterval(fadeOut)
+                onCountryClick(countryName)
+              }
+            }, 16)
+          }
         }, 900)
         return
       }
@@ -551,10 +563,25 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
           sceneState.current.targetZ = null
         }
       }
+      // Pulsação no feedMode
+      if (feedMode && reliefMesh?.material) {
+        const pulse = 0.3 + Math.sin(Date.now() * 0.002) * 0.2
+        ;(reliefMesh.material as any).emissiveIntensity = pulse
+      }
+
       renderer.render(scene, camera)
       raf = requestAnimationFrame(tick)
     }
     tick()
+
+    sceneState.current.resetFeed = () => {
+      sceneState.current.targetZ = 8.5
+      sceneState.current.targetRot = null
+      sceneState.current.zooming = false
+      sceneState.current.continentActive = false
+      velY = 0.0025
+    }
+    onSceneReady?.(sceneState.current.resetFeed)
 
     sceneState.current.zoomTo = (lat: number, lon: number, name: string) => {
       sceneState.current.zooming = true
@@ -676,8 +703,9 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
   }, [])
 
   useEffect(() => {
+    if (feedModeRef.current) return
     sceneState.current.rebakeTexture?.()
-  }, [visitedCountries])
+  }, [visitedCountries]) // eslint-disable-line
 
   useEffect(() => {
     if (!activeContinent) {

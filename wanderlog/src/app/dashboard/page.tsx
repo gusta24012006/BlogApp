@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import dynamic from 'next/dynamic'
 import AddCountryModal from '@/components/AddCountryModal'
+import Navbar from '@/components/Navbar'
 
 const Globe = dynamic(() => import('@/components/Globe'), { ssr: false })
 
@@ -29,6 +30,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [userId, setUserId] = useState<string>('')
+  const [followersCount, setFollowersCount] = useState(0)
+  const [followingCount, setFollowingCount] = useState(0)
   const router = useRouter()
 
   useEffect(() => {
@@ -48,6 +51,14 @@ export default function Dashboard() {
       const { data: countriesData } = await supabase
         .from('countries_visited').select('country_name').eq('user_id', user.id)
 
+      // Contadores de follows
+      const { count: fCount } = await supabase
+        .from('follows').select('*', { count: 'exact', head: true }).eq('following_id', user.id)
+      const { count: fgCount } = await supabase
+        .from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', user.id)
+
+      setFollowersCount(fCount || 0)
+      setFollowingCount(fgCount || 0)
       setProfile(profileData)
       setVisitedCountries(countriesData?.map((c: any) => c.country_name) || [])
       setLoading(false)
@@ -74,6 +85,7 @@ export default function Dashboard() {
     <div style={{
       width: '100%', minHeight: '100vh', background: '#F5F0E8',
       display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, sans-serif',
+      paddingBottom: 80,
     }}>
       {/* Profile Header */}
       <div style={{
@@ -105,6 +117,15 @@ export default function Dashboard() {
             )}
           </div>
           <div style={{ display: 'flex', gap: 8, alignSelf: 'flex-start' }}>
+            <button onClick={() => router.push('/search')} style={{
+              width: 36, height: 36, borderRadius: '50%',
+              border: '1px solid rgba(184,168,152,0.5)', background: 'transparent',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8A7A65" strokeWidth="2" strokeLinecap="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </button>
             <button onClick={() => router.push('/profile/edit')} style={{
               padding: '7px 14px', borderRadius: 100,
               border: '1px solid rgba(184,168,152,0.5)', background: 'transparent',
@@ -133,14 +154,19 @@ export default function Dashboard() {
           paddingTop: 14, paddingBottom: 14,
         }}>
           {[
-            { label: 'PAÍSES', value: visitedCountries.length },
-            { label: 'LIKES', value: 0 },
-            { label: 'SEGUIDORES', value: 0 },
+            { label: 'PAÍSES', value: visitedCountries.length, link: null },
+            { label: 'SEGUIDORES', value: followersCount, link: `/user/${profile?.username}/follows?tab=followers` },
+            { label: 'A SEGUIR', value: followingCount, link: `/user/${profile?.username}/follows?tab=following` },
           ].map((s, i) => (
-            <div key={s.label} style={{
-              flex: 1, textAlign: 'center',
-              borderLeft: i > 0 ? '1px solid rgba(184,168,152,0.45)' : 'none',
-            }}>
+            <div
+              key={s.label}
+              onClick={() => s.link && router.push(s.link)}
+              style={{
+                flex: 1, textAlign: 'center',
+                borderLeft: i > 0 ? '1px solid rgba(184,168,152,0.45)' : 'none',
+                cursor: s.link ? 'pointer' : 'default',
+              }}
+            >
               <div style={{ fontSize: 22, fontWeight: 800, color: '#FFB800', letterSpacing: -0.5, lineHeight: 1 }}>
                 {s.value}
               </div>
@@ -239,6 +265,7 @@ export default function Dashboard() {
           onRemove={(name) => setVisitedCountries(prev => prev.filter(n => n !== name))}
         />
       )}
+      <Navbar />
     </div>
   )
 }
