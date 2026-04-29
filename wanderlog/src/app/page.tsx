@@ -11,12 +11,7 @@ export default function HomePage() {
     const check = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data } = await supabase.from('profiles').select('globe_color').eq('id', user.id).maybeSingle()
-        if (data?.globe_color) {
-          router.replace('/dashboard')
-        } else {
-          router.replace('/onboarding')
-        }
+        router.replace('/dashboard')
       } else {
         router.replace('/login')
       }
@@ -32,7 +27,7 @@ export default function HomePage() {
     }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 28, fontWeight: 600, color: '#2A2520', letterSpacing: -0.5 }}>
-          wander<span style={{ color: '#FFB800' }}>log</span>
+          <span style={{ color: '#FFB800' }}>volta</span>
         </div>
       </div>
     </div>

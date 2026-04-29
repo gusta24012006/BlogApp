@@ -91,7 +91,7 @@ export default function OnboardingPage() {
         }}>
           {/* Logo */}
           <div style={{ fontFamily: 'Georgia, serif', fontSize: 36, fontWeight: 700, color: '#2A2520', marginBottom: 8 }}>
-            wander<span style={{ color: '#FFB800' }}>log</span>
+            <span style={{ color: '#FFB800' }}>volta</span>
           </div>
           <div style={{ fontSize: 13, color: '#8A7A65', marginBottom: 48 }}>
             O mundo à espera das tuas histórias

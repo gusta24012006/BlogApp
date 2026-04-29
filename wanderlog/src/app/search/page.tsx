@@ -27,7 +27,6 @@ export default function SearchPage() {
   const [query, setQuery] = useState('')
   const [userResults, setUserResults] = useState<Profile[]>([])
   const [blogResults, setBlogResults] = useState<BlogResult[]>([])
-  const [featuredBlogs, setFeaturedBlogs] = useState<BlogResult[]>([])
   const [loading, setLoading] = useState(false)
   const [currentUserId, setCurrentUserId] = useState('')
   const [activeTab, setActiveTab] = useState<'users' | 'countries'>('users')
@@ -41,14 +40,12 @@ export default function SearchPage() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.push('/login'); return }
       setCurrentUserId(user.id)
-      const [countriesRes, followingRes, featuredRes] = await Promise.all([
+      const [countriesRes, followingRes] = await Promise.all([
         supabase.from('countries_visited').select('country_name').eq('user_id', user.id),
         supabase.from('follows').select('profiles(username)').eq('follower_id', user.id),
-        supabase.from('posts').select('id, title, country_code, country_name, cover_image, profiles(username, display_name, avatar_url)').eq('published', true).limit(4),
       ])
       setMyCountries(countriesRes.data?.map((c: any) => c.country_name) || [])
       setMyFollowing((followingRes.data as any)?.map((f: any) => f.profiles?.username).filter(Boolean) || [])
-      setFeaturedBlogs((featuredRes.data as any) || [])
     })
   }, [router])
 
@@ -225,50 +222,6 @@ export default function SearchPage() {
             ))}
           </div>
 
-          {/* Em destaque */}
-          {featuredBlogs.length > 0 && (
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#8A7A65', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>
-                Em destaque
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                {featuredBlogs.slice(0, 4).map(blog => {
-                  const flag = blog.country_code.toUpperCase().replace(/./g, (c: string) => String.fromCodePoint(c.charCodeAt(0) + 127397))
-                  const colors = ['#7B2D6B', '#1B4F8A', '#2D6A4F', '#B8560A']
-                  const ci = featuredBlogs.indexOf(blog) % colors.length
-                  return (
-                    <button key={blog.id}
-                      onClick={() => router.push(`/user/${blog.profiles?.username}/country/${blog.country_code}`)}
-                      style={{
-                        borderRadius: 16, overflow: 'hidden', border: 'none', cursor: 'pointer',
-                        background: blog.cover_image ? 'transparent' : colors[ci],
-                        padding: 0, textAlign: 'left', position: 'relative',
-                        height: 120,
-                      }}
-                    >
-                      {blog.cover_image
-                        ? <img src={blog.cover_image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-                        : null
-                      }
-                      <div style={{
-                        position: 'absolute', inset: 0,
-                        background: blog.cover_image ? 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' : 'none',
-                        padding: '12px 12px',
-                        display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-                      }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', lineHeight: 1.3, fontFamily: "'Playfair Display', Georgia, serif" }}>
-                          {blog.title}
-                        </div>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 3 }}>
-                          {blog.country_name}
-                        </div>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
