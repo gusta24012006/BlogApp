@@ -2,6 +2,25 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+function hexToHsl(hex: string): [number, number, number] {
+  try {
+    const r = parseInt(hex.slice(1, 3), 16) / 255
+    const g = parseInt(hex.slice(3, 5), 16) / 255
+    const b = parseInt(hex.slice(5, 7), 16) / 255
+    const max = Math.max(r, g, b), min = Math.min(r, g, b)
+    let h = 0, s = 0
+    const l = (max + min) / 2
+    if (max !== min) {
+      const d = max - min
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+      if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6
+      else if (max === g) h = ((b - r) / d + 2) / 6
+      else h = ((r - g) / d + 4) / 6
+    }
+    return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)]
+  } catch { return [45, 70, 35] }
+}
+
 const CONTINENTS: Record<string, { lat: number; lon: number }> = {
   Europe:       { lat: 52,  lon: -173 },
   Asia:         { lat: 45,  lon: -98  },
@@ -31,9 +50,10 @@ interface GlobeProps {
   onSceneReady?: (reset: () => void) => void
   onSearchReady?: (search: (name: string) => boolean) => void
   onResetReady?: (reset: () => void) => void
+  globeColor?: string
 }
 
-function buildReliefTexture(geojson: any, visitedNames: Set<string>) {
+function buildReliefTexture(geojson: any, visitedNames: Set<string>, globeColor: string = '#B8860B') {
   const W = 4096, H = 2048
   const canvas = document.createElement('canvas')
   canvas.width = W; canvas.height = H
@@ -67,15 +87,16 @@ function buildReliefTexture(geojson: any, visitedNames: Set<string>) {
         }
         ctx.closePath()
       })
-      // Fill dourado com glow
+      // Fill com cor do globo do utilizador
+      const [gH, gS, gL] = hexToHsl(globeColor)
+      const visitedFill = `hsl(${gH}, ${Math.min(100, gS + 20)}%, ${Math.min(90, gL + 45)}%)`
       ctx.save()
-      ctx.shadowColor = '#FFD93D'
+      ctx.shadowColor = globeColor
       ctx.shadowBlur = 30
-      ctx.fillStyle = '#FFE066'
+      ctx.fillStyle = visitedFill
       ctx.fill('evenodd')
       ctx.restore()
-      // Fronteira escura por cima para separar países vizinhos
-      ctx.strokeStyle = 'rgba(180, 120, 0, 0.85)'
+      ctx.strokeStyle = `hsl(${gH}, ${Math.min(100, gS + 10)}%, ${Math.max(20, gL - 20)}%)`
       ctx.lineWidth = 3.5
       ctx.lineJoin = 'round'
       ctx.stroke()
@@ -85,7 +106,7 @@ function buildReliefTexture(geojson: any, visitedNames: Set<string>) {
   return canvas
 }
 
-function buildEquirectTexture(geojson: any, visitedNames: Set<string>) {
+function buildEquirectTexture(geojson: any, visitedNames: Set<string>, globeColor: string = '#B8860B') {
   const W = 4096, H = 2048
   const canvas = document.createElement('canvas')
   canvas.width = W; canvas.height = H
@@ -143,10 +164,13 @@ function buildEquirectTexture(geojson: any, visitedNames: Set<string>) {
 
   geojson.features.forEach((f: any) => {
     if (visitedNames.has(f.properties.name)) {
+      const [vH, vS, vL] = hexToHsl(globeColor)
+      const visitedFill = `hsl(${vH}, ${Math.min(100, vS + 20)}%, ${Math.min(90, vL + 45)}%)`
+      const visitedStroke = `hsl(${vH}, ${Math.min(100, vS + 10)}%, ${Math.min(85, vL + 30)}%)`
       ctx.save()
-      ctx.shadowColor = '#FFD93D'
+      ctx.shadowColor = globeColor
       ctx.shadowBlur = 18
-      drawFeature(f, '#FFD93D', '#FFE680', 2.2)
+      drawFeature(f, visitedFill, visitedStroke, 2.2)
       ctx.restore()
     }
   })
@@ -154,7 +178,8 @@ function buildEquirectTexture(geojson: any, visitedNames: Set<string>) {
   return canvas
 }
 
-export default function Globe({ visitedCountries, activeContinent, onContinentClick, onCountryClick, userLocation, feedMode, feedTab, onSceneReady, onSearchReady, onResetReady }: GlobeProps) {
+
+export default function Globe({ visitedCountries, activeContinent, onContinentClick, onCountryClick, userLocation, feedMode, feedTab, onSceneReady, onSearchReady, onResetReady, globeColor }: GlobeProps) {
   const mountRef = useRef<HTMLDivElement>(null)
   const sceneState = useRef<any>({})
   const geojsonRef = useRef<any>(null)
@@ -162,6 +187,8 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
   visitedRef.current = visitedCountries
   const feedModeRef = useRef(feedMode)
   feedModeRef.current = feedMode
+  const globeColorRef = useRef(globeColor || '#B8860B')
+  globeColorRef.current = globeColor || '#B8860B'
   const locationRef = useRef<string | undefined>(userLocation)
   locationRef.current = userLocation
 
@@ -675,7 +702,9 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
             const name = f.properties?.name || ''
             const isVisited = visited.has(name)
             const isTarget = name === feature.properties.name
-            const fillColor = isTarget ? (highlight ? '#FFFFFF' : '#FFB800') : isVisited ? '#FFD93D' : '#D4C9B0'
+            const [eH, eS, eL] = hexToHsl(globeColorRef?.current || '#B8860B')
+            const eVisited = `hsl(${eH}, ${Math.min(100, eS + 20)}%, ${Math.min(90, eL + 45)}%)`
+            const fillColor = isTarget ? (highlight ? '#FFFFFF' : eVisited) : isVisited ? eVisited : '#D4C9B0'
             const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates
             polys.forEach((poly: any) => {
               ctx.beginPath()
@@ -823,7 +852,7 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
       const visited = new Set(visitedRef.current)
 
       // Textura base
-      const baseCanvas = buildEquirectTexture(geojson, visited)
+      const baseCanvas = buildEquirectTexture(geojson, visited, globeColorRef.current)
       const baseTex = new THREE.CanvasTexture(baseCanvas)
       baseTex.needsUpdate = true
       baseTex.minFilter = THREE.LinearFilter
@@ -843,7 +872,7 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
 
       // Textura de relevo — só países visitados, fundo transparente
       if (visited.size > 0) {
-        const reliefCanvas = buildReliefTexture(geojson, visited)
+        const reliefCanvas = buildReliefTexture(geojson, visited, globeColorRef.current)
         const reliefTex = new THREE.CanvasTexture(reliefCanvas)
         reliefTex.needsUpdate = true
         reliefTex.minFilter = THREE.LinearFilter

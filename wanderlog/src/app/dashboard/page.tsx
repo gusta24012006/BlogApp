@@ -63,6 +63,7 @@ export default function Dashboard() {
     : []
   const [followersCount, setFollowersCount] = useState(0)
   const [followingCount, setFollowingCount] = useState(0)
+  const [globeColor, setGlobeColor] = useState('#B8860B')
   const router = useRouter()
 
   useEffect(() => {
@@ -78,6 +79,7 @@ export default function Dashboard() {
 
       const { data: profileData } = await supabase
         .from('profiles').select('*').eq('id', user.id).single()
+      if (profileData?.globe_color) setGlobeColor(profileData.globe_color)
 
       const { data: countriesData } = await supabase
         .from('countries_visited').select('country_name').eq('user_id', user.id)
@@ -173,6 +175,12 @@ export default function Dashboard() {
               fontSize: 12, fontWeight: 500, color: '#8A7A65',
               cursor: 'pointer',
             }}>Editar perfil</button>
+            <button onClick={() => router.push('/profile/customize')} style={{
+              padding: '7px 14px', borderRadius: 100,
+              border: '1px solid rgba(184,168,152,0.5)', background: 'transparent',
+              fontSize: 12, fontWeight: 500, color: '#8A7A65',
+              cursor: 'pointer',
+            }}>Personalizar</button>
             <button onClick={() => setShowModal(true)} style={{
               padding: '7px 14px', borderRadius: 100,
               border: 'none', background: '#FFB800',
@@ -252,6 +260,7 @@ export default function Dashboard() {
             onContinentClick={(name) => setActiveContinent(activeContinent === name ? null : name)}
             onSearchReady={(fn) => { searchFnRef.current = fn }}
             onResetReady={(fn) => { resetGlobeFnRef.current = fn }}
+            globeColor={globeColor}
             onCountryClick={async (countryName) => {
               // Buscar o country_code a partir do nome
               const { data } = await supabase

@@ -213,7 +213,7 @@ export default function CountryBlogPage() {
         {/* Botão editar — só para o dono */}
         {isOwner && (
           <button
-            onClick={() => router.push(`/blog/edit/${post.id}`)}
+            onClick={() => router.push(`/blog/new?country=${post.country_code}&name=${encodeURIComponent(post.country_name)}`)}
             style={{
               padding: '7px 16px', borderRadius: 20,
               background: '#FFB800', border: 'none',
@@ -267,7 +267,7 @@ export default function CountryBlogPage() {
             Este blog ainda não tem conteúdo.
             {isOwner && (
               <div style={{ marginTop: 16 }}>
-                <button onClick={() => router.push(`/blog/edit/${post.id}`)} style={{
+                <button onClick={() => router.push(`/blog/new?country=${post.country_code}&name=${encodeURIComponent(post.country_name)}`)} style={{
                   padding: '10px 24px', borderRadius: 20,
                   background: '#FFB800', border: 'none',
                   color: '#2A2520', fontWeight: 600, cursor: 'pointer', fontSize: 13,

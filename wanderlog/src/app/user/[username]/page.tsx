@@ -250,6 +250,7 @@ export default function UserProfilePage() {
             visitedCountries={visitedCountries}
             activeContinent={activeContinent}
             onContinentClick={(name) => setActiveContinent(activeContinent === name ? null : name)}
+            globeColor={profile?.globe_color || '#B8860B'}
             onCountryClick={async (countryName) => {
               const { data } = await supabase
                 .from('countries_visited')
