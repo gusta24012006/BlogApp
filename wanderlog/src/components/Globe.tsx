@@ -29,6 +29,8 @@ interface GlobeProps {
   feedMode?: boolean
   feedTab?: 'following' | 'discover'
   onSceneReady?: (reset: () => void) => void
+  onSearchReady?: (search: (name: string) => boolean) => void
+  onResetReady?: (reset: () => void) => void
 }
 
 function buildReliefTexture(geojson: any, visitedNames: Set<string>) {
@@ -152,7 +154,7 @@ function buildEquirectTexture(geojson: any, visitedNames: Set<string>) {
   return canvas
 }
 
-export default function Globe({ visitedCountries, activeContinent, onContinentClick, onCountryClick, userLocation, feedMode, feedTab, onSceneReady }: GlobeProps) {
+export default function Globe({ visitedCountries, activeContinent, onContinentClick, onCountryClick, userLocation, feedMode, feedTab, onSceneReady, onSearchReady, onResetReady }: GlobeProps) {
   const mountRef = useRef<HTMLDivElement>(null)
   const sceneState = useRef<any>({})
   const geojsonRef = useRef<any>(null)
@@ -582,6 +584,211 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
       velY = 0.0025
     }
     onSceneReady?.(sceneState.current.resetFeed)
+
+    // Função de pesquisa de país
+    sceneState.current.searchCountry = (countryName: string): boolean => {
+      if (!geojsonRef.current) return false
+
+      // Mapa reverso: nome BD -> nome GeoJSON
+      const BD_TO_GEO: Record<string, string> = {
+        'Bosnia and Herz.': 'Bosnia and Herzegovina',
+        'Central African Rep.': 'Central African Republic',
+        'Dem. Rep. Congo': 'Democratic Republic of the Congo',
+        'Congo': 'Republic of the Congo',
+        'Dominican Rep.': 'Dominican Republic',
+        'Eq. Guinea': 'Equatorial Guinea',
+        'Czechia': 'Czech Republic',
+        'North Macedonia': 'Macedonia',
+        'S. Sudan': 'South Sudan',
+        'United States': 'United States of America',
+        'Guinea-Bissau': 'Guinea Bissau',
+        'Timor-Leste': 'East Timor',
+        'United Kingdom': 'England',
+        'eSwatini': 'Swaziland',
+        'Cape Verde': 'Cabo Verde',
+      }
+      const searchName = BD_TO_GEO[countryName] || countryName
+      
+      // Encontrar o país pelo nome — match exacto primeiro, depois startsWith
+      const searchLower = searchName.toLowerCase()
+      const feature = geojsonRef.current.features.find((f: any) =>
+        (f.properties?.name || '').toLowerCase() === searchLower
+      ) || geojsonRef.current.features.find((f: any) =>
+        (f.properties?.name || '').toLowerCase().startsWith(searchLower)
+      )
+      
+      if (!feature) return false
+      
+      // Calcular centróide do país
+      const coords: number[][] = []
+      const polys = feature.geometry.type === 'Polygon'
+        ? [feature.geometry.coordinates]
+        : feature.geometry.coordinates
+      polys.forEach((poly: any) => {
+        poly[0].forEach((c: number[]) => coords.push(c))
+      })
+      
+      const lon = coords.reduce((s, c) => s + c[0], 0) / coords.length
+      const lat = coords.reduce((s, c) => s + c[1], 0) / coords.length
+      
+      // Fazer zoom para o país
+      const targetY = (-lon - 83) * Math.PI / 180
+      const targetX = lat * Math.PI / 180
+      sceneState.current.targetRot = { x: targetX, y: targetY }
+      sceneState.current.zooming = true
+      sceneState.current.continentActive = true
+      sceneState.current.targetZ = 5.0
+      velY = 0
+      
+      // Mapa para verificar países visitados na textura de relevo
+      const NAME_MAP: Record<string, string> = {
+        'Bosnia and Herzegovina': 'Bosnia and Herz.',
+        'Central African Republic': 'Central African Rep.',
+        'Democratic Republic of the Congo': 'Dem. Rep. Congo',
+        'Dominican Republic': 'Dominican Rep.',
+        'Equatorial Guinea': 'Eq. Guinea',
+        'Czech Republic': 'Czechia',
+        'Macedonia': 'North Macedonia',
+        'South Sudan': 'S. Sudan',
+        'United States of America': 'United States',
+        'Guinea Bissau': 'Guinea-Bissau',
+        'East Timor': 'Timor-Leste',
+        'England': 'United Kingdom',
+        'Swaziland': 'eSwatini',
+      }
+
+      // Piscar só o país encontrado — redesenhar textura alternando a cor
+      if (geojsonRef.current) {
+        let pulseCount = 0
+        const buildPulseTexture = (highlight: boolean) => {
+          const visited = new Set(visitedRef.current)
+          const W = 4096, H = 2048
+          const canvas = document.createElement('canvas')
+          canvas.width = W; canvas.height = H
+          const ctx = canvas.getContext('2d')!
+          const project = (lo: number, la: number): [number, number] => [
+            (lo + 180) / 360 * W, (90 - la) / 180 * H
+          ]
+          ctx.fillStyle = '#B8D4E8'
+          ctx.fillRect(0, 0, W, H)
+          geojsonRef.current.features.forEach((f: any) => {
+            const name = f.properties?.name || ''
+            const isVisited = visited.has(name)
+            const isTarget = name === feature.properties.name
+            const fillColor = isTarget ? (highlight ? '#FFFFFF' : '#FFB800') : isVisited ? '#FFD93D' : '#D4C9B0'
+            const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates
+            polys.forEach((poly: any) => {
+              ctx.beginPath()
+              poly.forEach((ring: any) => {
+                let penDown = false
+                for (let i = 0; i < ring.length; i++) {
+                  const [x, y] = project(ring[i][0], ring[i][1])
+                  if (!penDown) { ctx.moveTo(x, y); penDown = true }
+                  else {
+                    const [px] = project(ring[i-1][0], ring[i-1][1])
+                    if (Math.abs(x - px) > W / 2) ctx.moveTo(x, y)
+                    else ctx.lineTo(x, y)
+                  }
+                }
+                ctx.closePath()
+              })
+              ctx.fillStyle = fillColor
+              ctx.fill('evenodd')
+              ctx.strokeStyle = isVisited ? 'rgba(180,120,0,0.85)' : '#B8A898'
+              ctx.lineWidth = isVisited ? 3.5 : 1.6
+              ctx.stroke()
+            })
+          })
+          return canvas
+        }
+
+        // Piscar redesenhando ambas as texturas
+        const buildReliefPulse = (highlight: boolean) => {
+          const visited = new Set(visitedRef.current)
+          const W = 4096, H = 2048
+          const canvas = document.createElement('canvas')
+          canvas.width = W; canvas.height = H
+          const ctx = canvas.getContext('2d')!
+          ctx.clearRect(0, 0, W, H)
+          const project = (lo: number, la: number): [number, number] => [
+            (lo + 180) / 360 * W, (90 - la) / 180 * H
+          ]
+          geojsonRef.current.features.forEach((f: any) => {
+            const name = f.properties?.name || ''
+            const isTarget = name === feature.properties.name
+            const bdName = NAME_MAP[name] || name
+            const isVisited = visited.has(bdName)
+            if (!isVisited && !isTarget) return
+            const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates
+            polys.forEach((poly: any) => {
+              ctx.beginPath()
+              poly.forEach((ring: any) => {
+                let penDown = false
+                for (let i = 0; i < ring.length; i++) {
+                  const [x, y] = project(ring[i][0], ring[i][1])
+                  if (!penDown) { ctx.moveTo(x, y); penDown = true }
+                  else {
+                    const [px] = project(ring[i-1][0], ring[i-1][1])
+                    if (Math.abs(x - px) > W / 2) ctx.moveTo(x, y)
+                    else ctx.lineTo(x, y)
+                  }
+                }
+                ctx.closePath()
+              })
+              ctx.fillStyle = isTarget ? (highlight ? '#FFFFFF' : '#FFE066') : '#FFE066'
+              ctx.fill('evenodd')
+              ctx.strokeStyle = isTarget && highlight ? '#fff' : 'rgba(180,120,0,0.85)'
+              ctx.lineWidth = isTarget ? 4 : 3.5
+              ctx.stroke()
+            })
+          })
+          return canvas
+        }
+
+        // Aplicar imediatamente antes do interval para evitar flash inicial
+        const applyPulse = (highlight: boolean) => {
+          const tex = new THREE.CanvasTexture(buildReliefPulse(highlight))
+          tex.minFilter = THREE.LinearFilter
+          tex.magFilter = THREE.LinearFilter
+          tex.generateMipmaps = false
+          if (reliefMesh?.material) {
+            reliefMesh.material.dispose()
+            reliefMesh.material = new THREE.MeshPhongMaterial({
+              map: tex, alphaMap: tex, transparent: true, depthWrite: false,
+              shininess: 40,
+              emissive: new THREE.Color(0xFFD93D),
+              emissiveMap: tex, emissiveIntensity: 0.3,
+            })
+            reliefMesh.material.needsUpdate = true
+          }
+        }
+        applyPulse(true) // aplicar imediatamente
+
+        const pulse = setInterval(() => {
+          pulseCount++
+          const highlight = pulseCount % 2 === 0
+          applyPulse(highlight)
+          if (pulseCount > 8) {
+            clearInterval(pulse)
+            sceneState.current.rebakeTexture?.()
+          }
+        }, 350)
+      }
+      
+      return true
+    }
+    
+    onSearchReady?.(sceneState.current.searchCountry)
+
+    // Expor função de reset do zoom
+    const resetZoomFn = () => {
+      sceneState.current.targetZ = 8.5
+      sceneState.current.targetRot = null
+      sceneState.current.zooming = false
+      sceneState.current.continentActive = false
+      velY = 0.0025
+    }
+    onResetReady?.(resetZoomFn)
 
     sceneState.current.zoomTo = (lat: number, lon: number, name: string) => {
       sceneState.current.zooming = true

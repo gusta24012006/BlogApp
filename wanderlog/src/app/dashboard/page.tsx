@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import dynamic from 'next/dynamic'
@@ -30,6 +30,37 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [userId, setUserId] = useState<string>('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchError, setSearchError] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const searchFnRef = useRef<((name: string) => boolean) | null>(null)
+  const resetGlobeFnRef = useRef<(() => void) | null>(null)
+
+  const ALL_COUNTRIES = [
+    'Afghanistan','Albania','Algeria','Angola','Argentina','Armenia','Australia','Austria','Azerbaijan',
+    'Bahrain','Bangladesh','Belarus','Belgium','Belize','Benin','Bhutan','Bolivia','Bosnia and Herz.',
+    'Botswana','Brazil','Brunei','Bulgaria','Burkina Faso','Burundi','Cambodia','Cameroon','Canada',
+    'Central African Rep.','Chad','Chile','China','Colombia','Congo','Costa Rica','Croatia','Cuba',
+    'Cyprus','Czechia','Dem. Rep. Congo','Denmark','Djibouti','Dominican Rep.','Ecuador','Egypt',
+    'El Salvador','Eq. Guinea','Eritrea','Estonia','Ethiopia','Fiji','Finland','France','Gabon',
+    'Gambia','Georgia','Germany','Ghana','Greece','Guatemala','Guinea','Guinea-Bissau','Guyana',
+    'Haiti','Honduras','Hungary','Iceland','India','Indonesia','Iran','Iraq','Ireland','Israel','Ivory Coast',
+    'Italy','Jamaica','Japan','Jordan','Kazakhstan','Kenya','Kuwait','Kyrgyzstan','Laos','Latvia',
+    'Lebanon','Lesotho','Liberia','Libya','Lithuania','Luxembourg','Madagascar','Malawi','Malaysia',
+    'Mali','Malta','Mauritania','Mexico','Moldova','Mongolia','Montenegro','Morocco','Mozambique',
+    'Myanmar','Namibia','Nepal','Netherlands','New Zealand','Nicaragua','Niger','Nigeria',
+    'North Macedonia','Norway','Oman','Pakistan','Panama','Papua New Guinea','Paraguay','Peru',
+    'Philippines','Poland','Portugal','Qatar','Romania','Russia','Rwanda','Saudi Arabia','Senegal',
+    'Serbia','Sierra Leone','Singapore','Slovakia','Slovenia','Somalia','South Africa','S. Sudan',
+    'Cape Verde','eSwatini','Kosovo','Spain','Sri Lanka','Sudan','Suriname','Sweden','Switzerland','Syria','Taiwan','Tajikistan',
+    'Tanzania','Thailand','Timor-Leste','Togo','Trinidad and Tobago','Tunisia','Turkey','Turkmenistan',
+    'Uganda','Ukraine','United Arab Emirates','United Kingdom','United States','Uruguay','Uzbekistan',
+    'Venezuela','Vietnam','Yemen','Zambia','Zimbabwe',
+  ]
+
+  const suggestions = searchQuery.length > 0
+    ? ALL_COUNTRIES.filter(c => c.toLowerCase().startsWith(searchQuery.toLowerCase())).slice(0, 5)
+    : []
   const [followersCount, setFollowersCount] = useState(0)
   const [followingCount, setFollowingCount] = useState(0)
   const router = useRouter()
@@ -219,6 +250,8 @@ export default function Dashboard() {
             visitedCountries={visitedCountries}
             activeContinent={activeContinent}
             onContinentClick={(name) => setActiveContinent(activeContinent === name ? null : name)}
+            onSearchReady={(fn) => { searchFnRef.current = fn }}
+            onResetReady={(fn) => { resetGlobeFnRef.current = fn }}
             onCountryClick={async (countryName) => {
               // Buscar o country_code a partir do nome
               const { data } = await supabase
@@ -237,6 +270,101 @@ export default function Dashboard() {
             alignItems: 'center', justifyContent: 'center',
             color: '#8A7A65', fontSize: 13,
           }}>A carregar globo...</div>
+        )}
+
+        {/* Barra de pesquisa de países */}
+        <div style={{
+          position: 'absolute', top: 10, right: 16, zIndex: 10,
+          display: 'flex', gap: 6, alignItems: 'center',
+        }}>
+          {/* Botão reset globo */}
+          <button
+            onClick={() => {
+              setSearchQuery('')
+              setSearchError('')
+              setShowSuggestions(false)
+              setActiveContinent(null)
+              resetGlobeFnRef.current?.()
+            }}
+            style={{
+              width: 30, height: 30, borderRadius: '50%',
+              background: 'rgba(245,240,232,0.7)', border: 'none',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6B5D4A" strokeWidth="2.2" strokeLinecap="round">
+              <polyline points="1 4 1 10 7 10"/>
+              <path d="M3.51 15a9 9 0 1 0 .49-3.5"/>
+            </svg>
+          </button>
+
+          <div style={{ position: 'relative' }}>
+            <svg style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }}
+              width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#2A2520" strokeWidth="2" strokeLinecap="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="País..."
+              value={searchQuery}
+              onChange={e => { setSearchQuery(e.target.value); setSearchError(''); setShowSuggestions(true) }}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && searchQuery.trim()) {
+                  setShowSuggestions(false)
+                  const found = searchFnRef.current?.(searchQuery.trim())
+                  if (!found) setSearchError('País não encontrado')
+                }
+              }}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              onFocus={() => setShowSuggestions(true)}
+              style={{
+                width: 120, padding: '6px 10px 6px 24px', borderRadius: 100,
+                border: 'none', background: 'rgba(245,240,232,0.7)',
+                backdropFilter: 'blur(10px)', fontSize: 12, outline: 'none',
+                color: '#2A2520', boxSizing: 'border-box',
+              }}
+            />
+          </div>
+        </div>
+        {/* Sugestões */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div style={{
+            position: 'absolute', top: 46, left: 16, right: 16, zIndex: 10,
+            background: 'rgba(245,240,232,0.97)', borderRadius: 12,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+            backdropFilter: 'blur(10px)', overflow: 'hidden',
+          }}>
+            {suggestions.map(country => (
+              <button
+                key={country}
+                onClick={() => {
+                  setSearchQuery(country)
+                  setShowSuggestions(false)
+                  setSearchError('')
+                  const found = searchFnRef.current?.(country)
+                  if (!found) setSearchError('País não encontrado')
+                }}
+                style={{
+                  width: '100%', padding: '10px 16px', textAlign: 'left',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontSize: 13, color: '#2A2520',
+                  borderBottom: '1px solid rgba(184,168,152,0.15)',
+                }}
+              >
+                {country}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {searchError && (
+          <div style={{
+            position: 'absolute', top: 50, left: 16, zIndex: 10,
+            background: 'rgba(226,75,74,0.9)', borderRadius: 8,
+            padding: '6px 12px', fontSize: 12, color: '#fff',
+            backdropFilter: 'blur(10px)',
+          }}>{searchError}</div>
         )}
 
         <div style={{
