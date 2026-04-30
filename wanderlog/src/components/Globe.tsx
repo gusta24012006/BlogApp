@@ -90,16 +90,20 @@ function buildReliefTexture(geojson: any, visitedNames: Set<string>, globeColor:
       // Fill com cor do globo do utilizador
       const [gH, gS, gL] = hexToHsl(globeColor)
       const visitedFill = `hsl(${gH}, ${Math.min(100, gS + 20)}%, ${Math.min(90, gL + 45)}%)`
+      // Sombra interior para simular profundidade/integração
       ctx.save()
-      ctx.shadowColor = globeColor
-      ctx.shadowBlur = 30
+      ctx.shadowColor = `hsl(${gH}, ${Math.min(100, gS + 10)}%, ${Math.max(10, gL - 30)}%)`
+      ctx.shadowBlur = 60
       ctx.fillStyle = visitedFill
       ctx.fill('evenodd')
       ctx.restore()
-      ctx.strokeStyle = `hsl(${gH}, ${Math.min(100, gS + 10)}%, ${Math.max(20, gL - 20)}%)`
-      ctx.lineWidth = 3.5
+      // Borda suave para não parecer que flutua
+      ctx.strokeStyle = `hsl(${gH}, ${Math.min(100, gS + 15)}%, ${Math.max(25, gL - 10)}%)`
+      ctx.lineWidth = 2
       ctx.lineJoin = 'round'
+      ctx.globalAlpha = 0.7
       ctx.stroke()
+      ctx.globalAlpha = 1
     })
   })
 
@@ -254,7 +258,7 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
       specular: new THREE.Color(0xFFD93D).multiplyScalar(0.3),
     })
     // No feedMode sem relevo — esfera do mesmo tamanho
-    const reliefRadius = feedMode ? R * 1.001 : R * 1.03
+    const reliefRadius = feedMode ? R * 1.001 : R * 1.008
     const reliefMesh = new THREE.Mesh(new THREE.SphereGeometry(reliefRadius, 96, 96), reliefMat)
     globeGroup.add(reliefMesh)
 
@@ -657,14 +661,30 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
       
       const lon = coords.reduce((s, c) => s + c[0], 0) / coords.length
       const lat = coords.reduce((s, c) => s + c[1], 0) / coords.length
+
+      // Calcular bounding box para zoom dinâmico
+      const lons = coords.map(c => c[0])
+      const lats = coords.map(c => c[1])
+      const lonSpan = Math.max(...lons) - Math.min(...lons)
+      const latSpan = Math.max(...lats) - Math.min(...lats)
+      const span = Math.max(lonSpan, latSpan)
+
+      // Zoom inversamente proporcional ao tamanho do país
+      // span ~180 (Russia) → targetZ ~7.5 (zoom out)
+      // span ~5  (Portugal) → targetZ ~4.5 (zoom médio)
+      // span ~1  (Luxembourg) → targetZ ~3.5 (zoom in)
+      const targetZ = feedMode
+        ? Math.min(7.5, Math.max(3.8, 4.2 + span * 0.018))
+        : Math.min(7.0, Math.max(3.5, 4.0 + span * 0.018))
       
-      // Fazer zoom para o país
-      const targetY = (-lon - 83) * Math.PI / 180
-      const targetX = lat * Math.PI / 180
+      // Fazer zoom para o país — com offset para ficar na metade superior quando sheet está aberto
+      const sheetOffset = feedMode ? -0.15 : 0
+      const targetY = (-lon - 87) * Math.PI / 180
+      const targetX = lat * Math.PI / 180 + sheetOffset
       sceneState.current.targetRot = { x: targetX, y: targetY }
       sceneState.current.zooming = true
       sceneState.current.continentActive = true
-      sceneState.current.targetZ = 5.0
+      sceneState.current.targetZ = targetZ
       velY = 0
       
       // Mapa para verificar países visitados na textura de relevo

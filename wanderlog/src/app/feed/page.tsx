@@ -30,12 +30,13 @@ interface Post {
 }
 
 // Componente estável que não re-renderiza quando o sheet abre
-const GlobeMemo = memo(({ countries, onCountryClick, tab, globeKey, globeResetRef }: {
+const GlobeMemo = memo(({ countries, onCountryClick, tab, globeKey, globeResetRef, searchFnRef }: {
   countries: string[]
   onCountryClick: (name: string) => void
   tab: string
   globeKey: number
   globeResetRef: React.MutableRefObject<(() => void) | null>
+  searchFnRef: React.MutableRefObject<((name: string) => boolean) | null>
 }) => {
   return (
     <Globe
@@ -46,10 +47,10 @@ const GlobeMemo = memo(({ countries, onCountryClick, tab, globeKey, globeResetRe
       onCountryClick={onCountryClick}
       feedMode={true}
       onSceneReady={(reset: () => void) => { globeResetRef.current = reset }}
+      onSearchReady={(fn: (name: string) => boolean) => { searchFnRef.current = fn }}
     />
   )
 }, (prev, next) => {
-  // Só re-renderizar se tab ou globeKey mudarem — não quando países mudam
   return prev.tab === next.tab && prev.globeKey === next.globeKey
 })
 
@@ -58,6 +59,7 @@ export default function FeedPage() {
   const [tab, setTab] = useState<'following' | 'discover'>('following')
   const viewedPostsRef = useRef<Set<string>>(new Set())
   const globeResetRef = useRef<(() => void) | null>(null)
+  const searchFnRef = useRef<((name: string) => boolean) | null>(null)
   const [scriptsLoaded, setScriptsLoaded] = useState(false)
   const [dataReady, setDataReady] = useState(false)
   const followingCountriesRef = useRef<string[]>([])
@@ -153,6 +155,8 @@ export default function FeedPage() {
       setPostBlocks(post.blocks || [])
       setBlogExpanded(false)
       setShowSheet(true)
+      // Centrar o país na parte superior (acima do sheet)
+      setTimeout(() => searchFnRef.current?.(countryName), 300)
 
       // Buscar seguidores do autor
       const { count } = await supabase
@@ -241,6 +245,7 @@ export default function FeedPage() {
             tab={tab}
             globeKey={globeKey}
             globeResetRef={globeResetRef}
+            searchFnRef={searchFnRef}
           />
         )}
       </div>
