@@ -181,44 +181,40 @@ export default function CountryBlogPage() {
       {/* Navbar */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
-        background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(184,168,152,0.2)',
-        padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 12,
+        background: 'rgba(245,240,232,0.95)', backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(184,168,152,0.15)',
+        padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 12,
+        fontFamily: "'DM Sans', system-ui",
       }}>
-        <button onClick={() => {
-          document.body.style.opacity = '0'
-          document.body.style.transition = 'opacity 0.3s'
-          setTimeout(() => {
-            document.body.style.opacity = ''
-            document.body.style.transition = ''
-            router.push('/dashboard')
-          }, 300)
-        }} style={{
+        <button onClick={() => router.push('/dashboard')} style={{
           background: 'none', border: 'none', cursor: 'pointer',
-          fontSize: 18, color: '#8A7A65',
-        }}>←</button>
+          color: '#8A7A65', display: 'flex', alignItems: 'center',
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
 
-        <span style={{ fontSize: 13, color: '#8A7A65', fontFamily: 'system-ui', flex: 1 }}>
+        <span style={{ fontSize: 14, color: '#2A2520', fontWeight: 500, flex: 1 }}>
           {flag} {post.country_name}
         </span>
 
         {!post.published && (
           <span style={{
-            fontSize: 11, padding: '2px 8px', borderRadius: 20,
-            background: 'rgba(239,159,39,0.15)', color: '#8A6800',
-            border: '1px solid rgba(239,159,39,0.3)', fontFamily: 'system-ui',
+            fontSize: 11, padding: '3px 10px', borderRadius: 100,
+            background: 'rgba(239,159,39,0.12)', color: '#8A6800',
+            border: '1px solid rgba(239,159,39,0.25)',
           }}>Rascunho</span>
         )}
 
-        {/* Botão editar — só para o dono */}
         {isOwner && (
           <button
             onClick={() => router.push(`/blog/new?country=${post.country_code}&name=${encodeURIComponent(post.country_name)}`)}
             style={{
-              padding: '7px 16px', borderRadius: 20,
+              padding: '7px 16px', borderRadius: 100,
               background: '#FFB800', border: 'none',
               fontSize: 12, fontWeight: 600, color: '#2A2520',
-              cursor: 'pointer',
+              cursor: 'pointer', fontFamily: "'DM Sans', system-ui",
             }}
           >
             Editar

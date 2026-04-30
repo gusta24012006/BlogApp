@@ -131,25 +131,34 @@ export default function BlogByIdPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: theme.bg, color: theme.text, fontFamily: theme.font }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');`}</style>
 
       {/* Navbar */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
-        background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(184,168,152,0.2)',
-        padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 12,
+        background: 'rgba(245,240,232,0.95)', backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(184,168,152,0.15)',
+        padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 12,
+        fontFamily: "'DM Sans', system-ui",
       }}>
-        <button onClick={() => router.back()} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#8A7A65' }}>←</button>
-        <span style={{ fontSize: 13, color: '#8A7A65', fontFamily: 'system-ui', flex: 1 }}>
+        <button onClick={() => router.back()} style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: '#8A7A65', display: 'flex', alignItems: 'center',
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <span style={{ fontSize: 14, color: '#2A2520', fontWeight: 500, flex: 1 }}>
           {flag} {post.country_name}
         </span>
-        <span style={{ fontSize: 13, color: '#8A7A65', fontFamily: 'system-ui' }}>
+        <span style={{ fontSize: 13, color: '#8A7A65' }}>
           @{post.profiles?.username}
         </span>
         {isOwner && (
           <button
             onClick={() => router.push(`/blog/country/${post.country_code}`)}
-            style={{ padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(184,168,152,0.5)', background: 'transparent', fontSize: 12, color: '#8A7A65', cursor: 'pointer' }}
+            style={{ padding: '7px 16px', borderRadius: 100, background: '#FFB800', border: 'none', fontSize: 12, fontWeight: 600, color: '#2A2520', cursor: 'pointer', fontFamily: "'DM Sans', system-ui" }}
           >
             Editar
           </button>

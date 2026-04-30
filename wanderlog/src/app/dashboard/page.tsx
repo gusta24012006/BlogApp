@@ -130,6 +130,16 @@ export default function Dashboard() {
         background: '#F5F0E8', padding: '52px 20px 16px',
         flexShrink: 0,
       }}>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <svg fill="#FFB800" width="24" height="24" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+            <path d="M512,256c0-68.38-26.629-132.667-74.981-181.019C388.668,26.629,324.38,0,256,0c-42.396,0-83.214,10.246-119.641,29.548c-49.413-19.661-87.464-19.19-108.415,1.76C6.613,52.64,6.257,90.739,26.893,141.505C9.305,176.613,0,215.591,0,256c0,68.38,26.629,132.667,74.981,181.019C123.333,485.371,187.62,512,256,512c41.656,0,81.787-9.9,117.728-28.556c23.719,9.363,44.81,14.081,62.616,14.08c19.011-0.001,34.294-5.36,45.057-16.123c20.978-20.978,21.662-58.178,2.053-107.692C502.104,337.773,512,297.649,512,256z M372.225,458.169c-3.518-1.541-7.091-3.174-10.726-4.925c-53.998-26.015-115.057-71.664-171.93-128.538c-27.902-27.902-53.688-57.542-75.61-86.826l41.67,10.737c6.087,1.57,12.289-2.095,13.857-8.178c1.568-6.085-2.094-12.289-8.178-13.857l-71.798-18.5c-3.353-0.864-6.92-0.152-9.686,1.931c-2.767,2.084-4.433,5.316-4.526,8.779l-2.007,74.116c-0.169,6.282,4.784,11.511,11.066,11.682c6.141,0,11.201-4.894,11.368-11.069l1.088-40.178c22.273,29.554,48.282,59.38,76.355,87.453c56.763,56.763,117.865,102.822,172.734,130.289C391.947,483.665,256,489.244,256,489.244S22.756,384.612,22.756,256c0-85.568,46.325-160.507,115.203-201.094c53.997,26.015,115.057,71.664,171.928,128.537c27.903,27.902,53.689,57.543,75.611,86.826l-41.67-10.737c-6.088-1.57-12.29,2.094-13.857,8.178c-1.568,6.085,2.094,12.289,8.178,13.857l71.798,18.501c4.687,1.206,9.687-1.932,10.687-6.931l2.006-74.117c0.17-6.282-4.784-11.512-11.066-11.682c-6.141,0-11.201,4.894-11.368,11.069l-1.088,40.178c-22.273-29.554-48.28-59.379-76.355-87.453C256,22.756,489.244,127.389,489.244,256C489.244,342.321,442.109,417.838,372.225,458.169z"/>
+          </svg>
+          <span style={{ fontFamily: "'DM Sans', system-ui", fontSize: 20, fontWeight: 700, color: '#2A2520', letterSpacing: -0.5 }}>
+            Vol<span style={{ color: '#FFB800' }}>ta</span>
+          </span>
+        </div>
+
         {/* Linha 1: avatar + info + ícones */}
         <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
           <div style={{
@@ -142,7 +152,7 @@ export default function Dashboard() {
             }
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 20, fontWeight: 700, color: '#2A2520', lineHeight: 1.1 }}>
+            <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: 20, fontWeight: 700, color: '#2A2520', lineHeight: 1.1 }}>
               {profile?.display_name || profile?.username || 'Viajante'}
             </div>
             <div style={{ fontSize: 11, color: '#8A7A65', marginTop: 2 }}>
@@ -221,7 +231,7 @@ export default function Dashboard() {
                 cursor: s.link ? 'pointer' : 'default',
               }}
             >
-              <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 22, fontWeight: 700, color: '#FFB800', lineHeight: 1 }}>
+              <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: 22, fontWeight: 700, color: '#FFB800', lineHeight: 1 }}>
                 {s.value}
               </div>
               <div style={{ fontSize: 9, color: '#8A7A65', marginTop: 4, textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 500 }}>
