@@ -187,28 +187,42 @@ export default function FeedPage() {
 
   return (
     <div style={{
-      width: '100%', height: '100vh', background: '#1a1a2e',
+      width: '100%', height: '100vh', background: '#110D0A',
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
-      fontFamily: 'system-ui, sans-serif', position: 'relative',
+      fontFamily: "'DM Sans', system-ui, sans-serif", position: 'relative',
     }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap');`}</style>
+
+      {/* Logo top left */}
+      <div style={{ position: 'absolute', top: 52, left: 20, zIndex: 25 }}>
+        <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: -0.5 }}>
+          Vol<span style={{ color: '#FFB800' }}>ta</span>
+        </div>
+      </div>
 
       {/* Abas tipo TikTok — em cima ao centro */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
         display: 'flex', justifyContent: 'center', padding: '52px 0 16px',
-        background: 'linear-gradient(to bottom, rgba(26,26,46,0.8) 0%, transparent 100%)',
+        background: 'linear-gradient(to bottom, rgba(17,13,10,0.9) 0%, transparent 100%)',
       }}>
-        <div style={{ display: 'flex', gap: 24 }}>
+        <div style={{
+          display: 'flex', gap: 4,
+          background: 'rgba(255,255,255,0.08)',
+          borderRadius: 100, padding: 4,
+          backdropFilter: 'blur(12px)',
+          border: '0.5px solid rgba(255,255,255,0.1)',
+        }}>
           {(['following', 'discover'] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
               style={{
-                background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
-                fontSize: 16, fontWeight: tab === t ? 700 : 400,
-                color: tab === t ? '#fff' : 'rgba(255,255,255,0.5)',
-                fontFamily: 'system-ui',
-                borderBottom: tab === t ? '2px solid #FFB800' : '2px solid transparent',
+                padding: '7px 20px', borderRadius: 100, border: 'none', cursor: 'pointer',
+                fontSize: 13, fontWeight: 600,
+                background: tab === t ? '#FFB800' : 'transparent',
+                color: tab === t ? '#2A2520' : 'rgba(255,255,255,0.6)',
+                fontFamily: "'DM Sans', system-ui",
                 transition: 'all 0.2s',
               }}
             >
@@ -236,7 +250,7 @@ export default function FeedPage() {
         <div
           style={{
             position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 30,
-            background: '#fff', borderRadius: '20px 20px 0 0',
+            background: '#F5F0E8', borderRadius: '20px 20px 0 0',
             padding: '20px 20px 100px',
             transform: showSheet ? 'translateY(0)' : 'translateY(100%)',
             transition: 'transform 0.4s cubic-bezier(0.32, 0.72, 0, 1)',
@@ -413,21 +427,28 @@ export default function FeedPage() {
           position: 'absolute', bottom: 120, left: 0, right: 0,
           textAlign: 'center', padding: '0 40px', zIndex: 20,
         }}>
-          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
-            {tab === 'following'
-              ? 'As pessoas que segues ainda não publicaram blogs.\nSegue mais viajantes para ver as suas histórias.'
-              : 'Ainda não há blogs publicados para descobrir.'
-            }
+          <div style={{
+            background: 'rgba(255,255,255,0.06)', borderRadius: 16,
+            padding: '20px 24px', backdropFilter: 'blur(8px)',
+            border: '0.5px solid rgba(255,255,255,0.1)',
+          }}>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, marginBottom: tab === 'following' ? 14 : 0 }}>
+              {tab === 'following'
+                ? 'As pessoas que segues ainda não publicaram blogs. Segue mais viajantes para descobrir histórias.'
+                : 'Ainda não há blogs publicados para descobrir.'
+              }
+            </div>
+            {tab === 'following' && (
+              <button onClick={() => router.push('/search')} style={{
+                padding: '9px 22px', borderRadius: 100,
+                background: '#FFB800', border: 'none',
+                color: '#2A2520', fontWeight: 600, fontSize: 13,
+                cursor: 'pointer', fontFamily: "'DM Sans', system-ui",
+              }}>
+                Encontrar viajantes
+              </button>
+            )}
           </div>
-          {tab === 'following' && (
-            <button onClick={() => router.push('/search')} style={{
-              marginTop: 16, padding: '10px 24px', borderRadius: 100,
-              background: '#FFB800', border: 'none',
-              color: '#2A2520', fontWeight: 600, fontSize: 13, cursor: 'pointer',
-            }}>
-              Encontrar viajantes
-            </button>
-          )}
         </div>
       )}
 
