@@ -186,7 +186,14 @@ export default function CountryBlogPage() {
         padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 12,
         fontFamily: "'DM Sans', system-ui",
       }}>
-        <button onClick={() => router.push('/dashboard')} style={{
+        <button onClick={() => {
+          const ref = document.referrer
+          if (ref && ref.includes(window.location.hostname) && !ref.includes('/blog')) {
+            router.back()
+          } else {
+            router.push('/dashboard')
+          }
+        }} style={{
           background: 'none', border: 'none', cursor: 'pointer',
           color: '#8A7A65', display: 'flex', alignItems: 'center',
         }}>

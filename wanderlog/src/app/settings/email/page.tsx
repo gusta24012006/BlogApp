@@ -34,7 +34,8 @@ export default function ChangeEmailPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F0E8', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#F5F0E8', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');`}</style>
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
         background: 'rgba(245,240,232,0.95)', backdropFilter: 'blur(10px)',
@@ -42,9 +43,13 @@ export default function ChangeEmailPage() {
         padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 12,
       }}>
         <button onClick={() => router.push('/settings')} style={{
-          background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#8A7A65',
-        }}>←</button>
-        <div style={{ fontFamily: 'Georgia, serif', fontSize: 18, fontWeight: 600, color: '#2A2520' }}>
+          background: 'none', border: 'none', cursor: 'pointer', color: '#8A7A65', display: 'flex', alignItems: 'center',
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: 18, fontWeight: 600, color: '#2A2520' }}>
           Alterar email
         </div>
       </div>
@@ -55,7 +60,11 @@ export default function ChangeEmailPage() {
             background: 'rgba(93,202,165,0.1)', border: '1px solid rgba(93,202,165,0.3)',
             borderRadius: 12, padding: '20px', textAlign: 'center',
           }}>
-            <div style={{ fontSize: 24, marginBottom: 8 }}>✉️</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#5DCAA5" strokeWidth="1.8" strokeLinecap="round">
+                <rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,4 12,13 2,4"/>
+              </svg>
+            </div>
             <div style={{ fontSize: 15, fontWeight: 600, color: '#0F6E56', marginBottom: 8 }}>
               Confirma o teu novo email
             </div>

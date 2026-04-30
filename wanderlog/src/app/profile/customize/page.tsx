@@ -16,6 +16,7 @@ function loadScript(src: string): Promise<void> {
   })
 }
 
+
 function hexToHsl(hex: string): [number, number, number] {
   const r = parseInt(hex.slice(1, 3), 16) / 255
   const g = parseInt(hex.slice(3, 5), 16) / 255
@@ -65,6 +66,7 @@ interface Country {
   country_name: string
 }
 
+
 export default function CustomizePage() {
   const router = useRouter()
   const [selectedColor, setSelectedColor] = useState(GLOBE_COLORS[0])
@@ -73,9 +75,11 @@ export default function CustomizePage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [userId, setUserId] = useState('')
+  const [globeKey, setGlobeKey] = useState(0)
   const [scriptsLoaded, setScriptsLoaded] = useState(false)
   const [visitedCountries, setVisitedCountries] = useState<string[]>([])
-  const [globeKey, setGlobeKey] = useState(0)
+  const searchFnRef = useRef<((name: string) => boolean) | null>(null)
+
 
   useEffect(() => {
     const load = async () => {
@@ -121,7 +125,9 @@ export default function CustomizePage() {
   const reliefColor = getReliefColor(selectedColor.value)
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F0E8', fontFamily: 'system-ui, sans-serif', paddingBottom: 80 }}>
+    <div style={{ minHeight: '100vh', background: '#F5F0E8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 80 }}>
+
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');`}</style>
 
       {/* Header */}
       <div style={{
@@ -130,7 +136,11 @@ export default function CustomizePage() {
         borderBottom: '1px solid rgba(184,168,152,0.3)',
         padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 12,
       }}>
-        <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#8A7A65' }}>←</button>
+        <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8A7A65', display: 'flex', alignItems: 'center' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
         <div style={{ fontFamily: 'Georgia, serif', fontSize: 18, fontWeight: 600, color: '#2A2520', flex: 1 }}>
           Personalizar
         </div>
@@ -138,11 +148,11 @@ export default function CustomizePage() {
           onClick={handleSave}
           disabled={saving}
           style={{
-            padding: '8px 20px', borderRadius: 100, border: 'none',
+            padding: '9px 22px', borderRadius: 100, border: 'none',
             background: saved ? '#5DCAA5' : '#FFB800',
             color: saved ? '#fff' : '#2A2520',
             fontWeight: 600, fontSize: 13, cursor: 'pointer',
-            transition: 'all 0.2s',
+            transition: 'all 0.2s', fontFamily: "'DM Sans', system-ui",
           }}
         >
           {saving ? 'A guardar...' : saved ? 'Guardado' : 'Guardar'}
@@ -153,14 +163,15 @@ export default function CustomizePage() {
 
         {/* Secção globo */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: 16, color: '#2A2520' }}>
+          <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: 16, fontWeight: 600, color: '#2A2520' }}>
             Cor do globo
           </div>
           <button
             onClick={() => { setSelectedColor({ name: 'Âmbar', value: '#C17800' }); setGlobeKey(k => k + 1) }}
             style={{
-              fontSize: 12, color: '#8A7A65', background: 'none', border: 'none',
-              cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3,
+              fontSize: 11, color: '#B8A898', background: 'rgba(184,168,152,0.12)',
+              border: 'none', cursor: 'pointer', padding: '4px 10px',
+              borderRadius: 100, fontFamily: "'DM Sans', system-ui",
             }}
           >
             Repor original
@@ -170,12 +181,9 @@ export default function CustomizePage() {
         {/* Preview + seletor lado a lado */}
         <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', marginBottom: 24 }}>
 
-          {/* Preview do globo real */}
+          {/* Globe real */}
           <div style={{ flexShrink: 0 }}>
-            <div style={{
-              width: 140, height: 140, borderRadius: '50%',
-              overflow: 'hidden', background: '#F5F0E8',
-            }}>
+            <div style={{ width: 140, height: 140, borderRadius: '50%', overflow: 'hidden' }}>
               {scriptsLoaded && (
                 <Globe
                   key={`preview-${globeKey}`}
@@ -183,12 +191,14 @@ export default function CustomizePage() {
                   activeContinent={null}
                   onContinentClick={() => {}}
                   globeColor={selectedColor.value}
+                  onSearchReady={(fn) => { searchFnRef.current = fn }}
                 />
               )}
             </div>
-            <div style={{ fontSize: 11, color: '#8A7A65', textAlign: 'center', marginTop: 6 }}>
+            <div style={{ fontSize: 11, color: '#8A7A65', textAlign: 'center', marginTop: 8, fontWeight: 500 }}>
               {selectedColor.name}
             </div>
+
           </div>
 
           {/* Swatches retangulares */}
@@ -237,7 +247,7 @@ export default function CustomizePage() {
 
         {/* Secção países */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: 16, color: '#2A2520' }}>
+          <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: 16, fontWeight: 600, color: '#2A2520' }}>
             Países visitados
           </div>
           <div style={{ fontSize: 12, color: '#8A7A65' }}>{countries.length} países</div>
@@ -269,9 +279,13 @@ export default function CustomizePage() {
                   </div>
                   <div style={{
                     fontSize: 11, padding: '4px 10px', borderRadius: 100,
-                    background: 'rgba(184,168,152,0.15)', color: '#8A7A65',
+                    background: 'rgba(184,168,152,0.12)', color: '#8A7A65',
+                    display: 'flex', alignItems: 'center', gap: 4,
                   }}>
-                    Em breve
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                  Em breve
                   </div>
                 </div>
               )

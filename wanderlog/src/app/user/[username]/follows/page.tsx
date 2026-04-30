@@ -69,7 +69,7 @@ function UserRow({ profile, currentUserId, initialFollowing, isOwnProfile, curre
 
       {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: '#2A2520', fontFamily: 'Georgia, serif' }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: '#2A2520', fontFamily: "'DM Sans', system-ui" }}>
           {profile.display_name || profile.username}
         </div>
         <div style={{ fontSize: 12, color: '#8A7A65', marginTop: 2 }}>
@@ -135,6 +135,7 @@ export default function FollowsPage() {
   const [currentUserId, setCurrentUserId] = useState('')
   const [loading, setLoading] = useState(true)
   const [profileId, setProfileId] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -185,7 +186,9 @@ export default function FollowsPage() {
   }, [username, tab, router])
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F0E8', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#F5F0E8', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');`}</style>
 
       {/* Header */}
       <div style={{
@@ -195,11 +198,15 @@ export default function FollowsPage() {
         padding: '12px 20px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-          <button onClick={() => router.push('/dashboard')} style={{
+          <button onClick={() => router.back()} style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: 18, color: '#8A7A65',
-          }}>←</button>
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: 16, fontWeight: 600, color: '#2A2520' }}>
+            color: '#8A7A65', display: 'flex', alignItems: 'center',
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+          <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: 16, fontWeight: 600, color: '#2A2520' }}>
             @{username}
           </div>
         </div>
@@ -209,7 +216,7 @@ export default function FollowsPage() {
           {(['followers', 'following'] as const).map(t => (
             <button
               key={t}
-              onClick={() => router.replace(`/user/${username}/follows?tab=${t}`)}
+              onClick={() => { router.replace(`/user/${username}/follows?tab=${t}`); setSearchQuery('') }}
               style={{
                 flex: 1, padding: '7px 0', borderRadius: 100, fontSize: 13, fontWeight: 500,
                 background: tab === t ? '#fff' : 'transparent',
@@ -223,6 +230,32 @@ export default function FollowsPage() {
             </button>
           ))}
         </div>
+
+        {/* Pesquisa */}
+        <div style={{ position: 'relative', marginTop: 10 }}>
+          <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A7A65" strokeWidth="2" strokeLinecap="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Pesquisar..."
+            style={{
+              width: '100%', padding: '9px 12px 9px 34px', borderRadius: 100,
+              border: 'none', background: 'rgba(42,37,32,0.07)',
+              fontSize: 13, outline: 'none', color: '#2A2520',
+              boxSizing: 'border-box', fontFamily: "'DM Sans', system-ui",
+            }}
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} style={{
+              position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+              background: 'none', border: 'none', cursor: 'pointer', color: '#B8A898', fontSize: 16, lineHeight: 1,
+            }}>×</button>
+          )}
+        </div>
       </div>
 
       {/* Lista */}
@@ -232,15 +265,32 @@ export default function FollowsPage() {
         </div>
       ) : profiles.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '48px 20px' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>
-            {tab === 'followers' ? '👥' : '✈️'}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+            {tab === 'followers' ? (
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C8BAA8" strokeWidth="1.5" strokeLinecap="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            ) : (
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C8BAA8" strokeWidth="1.5" strokeLinecap="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+            )}
           </div>
-          <div style={{ fontSize: 15, color: '#2A2520', fontFamily: 'Georgia, serif' }}>
+          <div style={{ fontSize: 15, color: '#2A2520', fontFamily: "'DM Sans', system-ui", fontWeight: 600 }}>
             {tab === 'followers' ? 'Ainda sem seguidores' : 'Ainda não segue ninguém'}
           </div>
         </div>
       ) : (
-        profiles.map(profile => (
+        profiles
+        .filter(p => {
+          if (!searchQuery.trim()) return true
+          const q = searchQuery.toLowerCase()
+          return (p.display_name || '').toLowerCase().includes(q) || p.username.toLowerCase().includes(q)
+        })
+        .map(profile => (
           <UserRow
             key={profile.id}
             profile={profile}

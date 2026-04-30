@@ -125,8 +125,9 @@ export default function EditProfilePage() {
   return (
     <div style={{
       minHeight: '100vh', background: '#F5F0E8',
-      fontFamily: 'system-ui, sans-serif',
+      fontFamily: "'DM Sans', system-ui, sans-serif",
     }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');`}</style>
       {/* Top bar */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
@@ -136,9 +137,13 @@ export default function EditProfilePage() {
       }}>
         <button onClick={() => router.push('/dashboard')} style={{
           background: 'none', border: 'none', cursor: 'pointer',
-          fontSize: 20, color: '#8A7A65', padding: '0 4px',
-        }}>←</button>
-        <div style={{ fontFamily: 'Georgia, serif', fontSize: 18, fontWeight: 600, color: '#2A2520', flex: 1 }}>
+          color: '#8A7A65', display: 'flex', alignItems: 'center',
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: 18, fontWeight: 600, color: '#2A2520', flex: 1 }}>
           Editar perfil
         </div>
         <button
@@ -184,7 +189,16 @@ export default function EditProfilePage() {
               background: 'rgba(0,0,0,0.35)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <span style={{ fontSize: 20 }}>{uploadingAvatar ? '⏳' : '📷'}</span>
+              {uploadingAvatar ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              )}
             </div>
           </div>
           <div style={{ fontSize: 12, color: '#8A7A65', marginTop: 10 }}>
@@ -312,7 +326,7 @@ export default function EditProfilePage() {
 
         {/* Conta */}
         <div style={{ marginBottom: 8 }}>
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: 16, color: '#2A2520', marginBottom: 16 }}>
+          <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: 16, fontWeight: 600, color: '#2A2520', marginBottom: 16 }}>
             Conta
           </div>
           <button
