@@ -60,7 +60,10 @@ export default function LoginPage() {
   const getErrorMessage = (msg: string) => {
     if (msg.includes('Invalid login credentials')) return 'Email ou password incorretos'
     if (msg.includes('Email not confirmed')) return 'Confirma o teu email antes de entrar'
-    if (msg.includes('User already registered')) return 'Este email já está registado'
+    if (msg.includes('User already registered')) return 'Este email já está em uso'
+    if (msg.includes('already been registered')) return 'Este email já está em uso'
+    if (msg.includes('email address is already')) return 'Este email já está em uso'
+    if (msg.includes('already exists')) return 'Este email já está em uso'
     if (msg.includes('rate limit')) return 'Demasiadas tentativas. Aguarda uns minutos'
     return msg
   }

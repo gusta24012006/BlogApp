@@ -121,6 +121,15 @@ export default function AddCountryModal({ userId, visitedCountries, onClose, onA
         .eq('user_id', userId)
         .eq('country_code', country.code)
       if (!error) {
+        // Apagar post_views dos posts deste país para reaparecer no feed
+        const { data: posts } = await supabase
+          .from('posts').select('id')
+          .eq('user_id', userId).eq('country_code', country.code)
+        if (posts && posts.length > 0) {
+          const postIds = posts.map((p: any) => p.id)
+          await supabase.from('post_views').delete()
+            .eq('user_id', userId).in('post_id', postIds)
+        }
         onRemove(country.name)
         setToast(null)
       }
