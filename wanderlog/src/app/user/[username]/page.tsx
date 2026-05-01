@@ -107,7 +107,7 @@ export default function UserProfilePage() {
       {/* Header */}
       <div style={{ padding: '52px 20px 16px', background: '#F5F0E8', flexShrink: 0 }}>
         <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-          <button onClick={() => router.back()} style={{
+          <button onClick={() => router.push('/search')} style={{
             background: 'none', border: 'none', cursor: 'pointer',
             color: '#8A7A65', flexShrink: 0, padding: '4px 0',
             display: 'flex', alignItems: 'center',
@@ -205,7 +205,13 @@ export default function UserProfilePage() {
               const { data } = await supabase
                 .from('countries_visited').select('country_code')
                 .eq('country_name', countryName).eq('user_id', profile.id).maybeSingle()
-              if (data) router.push(`/user/${profile.username}/country/${data.country_code}`)
+              if (data?.country_code) router.push(`/user/${profile.username}/country/${data.country_code}`)
+              else {
+                const { data: postData } = await supabase
+                  .from('posts').select('country_code')
+                  .eq('country_name', countryName).eq('user_id', profile.id).maybeSingle()
+                if (postData?.country_code) router.push(`/user/${profile.username}/country/${postData.country_code}`)
+              }
             }}
             userLocation={profile?.location}
           />
