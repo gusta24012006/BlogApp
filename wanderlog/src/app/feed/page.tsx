@@ -30,13 +30,16 @@ interface Post {
 }
 
 // Componente estável que não re-renderiza quando o sheet abre
-const GlobeMemo = memo(({ countries, onCountryClick, tab, globeKey, globeResetRef, searchFnRef }: {
+const GlobeMemo = memo(({ countries, onCountryClick, tab, globeKey, globeResetRef, searchFnRef, discoverCountries, onDiscoverLand, handleCountryClickRef }: {
   countries: string[]
   onCountryClick: (name: string) => void
   tab: string
   globeKey: number
   globeResetRef: React.MutableRefObject<(() => void) | null>
   searchFnRef: React.MutableRefObject<((name: string) => boolean) | null>
+  discoverCountries: string[]
+  onDiscoverLand: (name: string) => void
+  handleCountryClickRef: React.MutableRefObject<((name: string) => void) | null>
 }) => {
   return (
     <Globe
@@ -46,6 +49,10 @@ const GlobeMemo = memo(({ countries, onCountryClick, tab, globeKey, globeResetRe
       onContinentClick={() => {}}
       onCountryClick={onCountryClick}
       feedMode={true}
+      discoverMode={tab === 'discover'}
+      discoverCountries={discoverCountries}
+      onDiscoverLand={(name) => handleCountryClickRef.current?.(name)}
+      onDiscoverLandRef={handleCountryClickRef}
       onSceneReady={(reset: () => void) => { globeResetRef.current = reset }}
       onSearchReady={(fn: (name: string) => boolean) => { searchFnRef.current = fn }}
     />
@@ -60,6 +67,7 @@ export default function FeedPage() {
   const viewedPostsRef = useRef<Set<string>>(new Set())
   const globeResetRef = useRef<(() => void) | null>(null)
   const searchFnRef = useRef<((name: string) => boolean) | null>(null)
+  const handleCountryClickRef = useRef<((name: string) => void) | null>(null)
   const [scriptsLoaded, setScriptsLoaded] = useState(false)
   const [dataReady, setDataReady] = useState(false)
   const followingCountriesRef = useRef<string[]>([])
@@ -141,13 +149,16 @@ export default function FeedPage() {
   }, [router])
 
   const handleCountryClick = useCallback(async (countryName: string) => {
-    const { data: posts } = await supabase
+    console.log('handleCountryClick:', countryName, 'tab:', tab)
+    console.log('handleCountryClick:', countryName, 'userId:', currentUserId)
+    const { data: posts, error } = await supabase
       .from('posts')
       .select('*, profiles(username, display_name, avatar_url)')
       .eq('country_name', countryName)
       .eq('published', true)
       .neq('user_id', currentUserId)
       .limit(1)
+    console.log('posts found:', posts, 'error:', error)
 
     if (posts && posts.length > 0) {
       const post = posts[0]
@@ -185,6 +196,8 @@ export default function FeedPage() {
     }
   }, [currentUserId, tab])
 
+  handleCountryClickRef.current = handleCountryClick
+
   const activeCountries = tab === 'following' ? followingCountriesAll : discoverCountries
   // Forçar re-render do Globe quando países mudam
   const countriesKey = activeCountries.join(',')
@@ -199,7 +212,7 @@ export default function FeedPage() {
 
       {/* Logo top left */}
       <div style={{ position: 'absolute', top: 52, left: 20, zIndex: 25 }}>
-        <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: -0.5 }}>
+        <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: -0.5 }}>
           Vol<span style={{ color: '#FFB800' }}>ta</span>
         </div>
       </div>
@@ -220,7 +233,7 @@ export default function FeedPage() {
           {(['following', 'discover'] as const).map(t => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              onClick={() => { setTab(t); setGlobeKey(k => k + 1) }}
               style={{
                 padding: '7px 20px', borderRadius: 100, border: 'none', cursor: 'pointer',
                 fontSize: 13, fontWeight: 600,
@@ -246,6 +259,9 @@ export default function FeedPage() {
             globeKey={globeKey}
             globeResetRef={globeResetRef}
             searchFnRef={searchFnRef}
+            discoverCountries={discoverCountries}
+            onDiscoverLand={handleCountryClick}
+            handleCountryClickRef={handleCountryClickRef}
           />
         )}
       </div>
@@ -352,7 +368,8 @@ export default function FeedPage() {
               {blogExpanded ? 'Minimizar' : 'Ler blog'}
             </button>
             <button
-              onClick={() => {
+              onClick={(e) => {
+            e.stopPropagation()
             setShowSheet(false)
             setBlogExpanded(false)
             globeResetRef.current?.()

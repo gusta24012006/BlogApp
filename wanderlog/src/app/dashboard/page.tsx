@@ -33,6 +33,7 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchError, setSearchError] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [navigating, setNavigating] = useState(false)
   const searchFnRef = useRef<((name: string) => boolean) | null>(null)
   const resetGlobeFnRef = useRef<(() => void) | null>(null)
 
@@ -123,7 +124,10 @@ export default function Dashboard() {
       paddingBottom: 80,
     }}>
       {/* Fontes */}
-      <style>{FONTS}</style>
+      <style>{FONTS + `
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      `}</style>
 
       {/* Profile Header */}
       <div style={{
@@ -425,6 +429,32 @@ export default function Dashboard() {
           País
         </button>
 
+        {/* Overlay de navegação */}
+        {navigating && (
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 20,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(0,0,0,0.15)', borderRadius: 24,
+            backdropFilter: 'blur(2px)',
+            animation: 'fadeIn 0.2s ease',
+          }}>
+            <div style={{
+              background: 'rgba(245,240,232,0.95)', borderRadius: 100,
+              padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+            }}>
+              <div style={{
+                width: 14, height: 14, borderRadius: '50%',
+                border: '2px solid #FFB800', borderTopColor: 'transparent',
+                animation: 'spin 0.6s linear infinite',
+              }} />
+              <span style={{ fontSize: 12, fontWeight: 500, color: '#2A2520', fontFamily: "'DM Sans', system-ui" }}>
+                A abrir...
+              </span>
+            </div>
+          </div>
+        )}
+
         {activeContinent && (
           <div style={{ position: 'absolute', top: 36, left: 16, zIndex: 5 }}>
             <button onClick={() => setActiveContinent(null)} style={{
@@ -445,6 +475,15 @@ export default function Dashboard() {
           onClose={() => setShowModal(false)}
           onAdd={(c) => setVisitedCountries(prev => [...prev, c.name])}
           onRemove={(name) => setVisitedCountries(prev => prev.filter(n => n !== name))}
+          onCountryVisitedClick={(country) => {
+            setShowModal(false)
+            searchFnRef.current?.(country.name)
+            setTimeout(() => router.push(`/blog/country/${country.code}`), 800)
+          }}
+          onCountryNewClick={(country) => {
+            setShowModal(false)
+            router.push(`/blog/new?country=${country.code}&name=${encodeURIComponent(country.name)}`)
+          }}
         />
       )}
       <Navbar />

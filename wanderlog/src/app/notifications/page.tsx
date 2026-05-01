@@ -80,7 +80,7 @@ export default function NotificationsPage() {
         position: 'sticky', top: 0, zIndex: 10,
         borderBottom: '1px solid rgba(184,168,152,0.15)',
       }}>
-        <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 24, fontWeight: 600, color: '#2A2520' }}>
+        <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: 24, fontWeight: 600, color: '#2A2520' }}>
           Notificações
         </div>
       </div>

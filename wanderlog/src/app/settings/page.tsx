@@ -83,7 +83,7 @@ export default function SettingsPage() {
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 22, fontWeight: 600, color: '#2A2520' }}>
+        <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: 22, fontWeight: 600, color: '#2A2520' }}>
           Definições
         </div>
       </div>

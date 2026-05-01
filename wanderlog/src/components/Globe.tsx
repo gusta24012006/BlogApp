@@ -51,6 +51,10 @@ interface GlobeProps {
   onSearchReady?: (search: (name: string) => boolean) => void
   onResetReady?: (reset: () => void) => void
   globeColor?: string
+  discoverMode?: boolean
+  discoverCountries?: string[]
+  onDiscoverLand?: (countryName: string) => void
+  onDiscoverLandRef?: React.MutableRefObject<((name: string) => void) | null>
 }
 
 function buildReliefTexture(geojson: any, visitedNames: Set<string>, globeColor: string = '#B8860B') {
@@ -183,7 +187,7 @@ function buildEquirectTexture(geojson: any, visitedNames: Set<string>, globeColo
 }
 
 
-export default function Globe({ visitedCountries, activeContinent, onContinentClick, onCountryClick, userLocation, feedMode, feedTab, onSceneReady, onSearchReady, onResetReady, globeColor }: GlobeProps) {
+export default function Globe({ visitedCountries, activeContinent, onContinentClick, onCountryClick, userLocation, feedMode, feedTab, onSceneReady, onSearchReady, onResetReady, globeColor, discoverMode, discoverCountries, onDiscoverLand, onDiscoverLandRef: externalDiscoverRef }: GlobeProps) {
   const mountRef = useRef<HTMLDivElement>(null)
   const sceneState = useRef<any>({})
   const geojsonRef = useRef<any>(null)
@@ -193,6 +197,12 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
   feedModeRef.current = feedMode
   const globeColorRef = useRef(globeColor || '#B8860B')
   globeColorRef.current = globeColor || '#B8860B'
+  const discoverModeRef = useRef(discoverMode)
+  discoverModeRef.current = discoverMode
+  const discoverCountriesRef2 = useRef(discoverCountries || [])
+  discoverCountriesRef2.current = discoverCountries || []
+  const onDiscoverLandRef = useRef(onDiscoverLand)
+  onDiscoverLandRef.current = onDiscoverLand
   const locationRef = useRef<string | undefined>(userLocation)
   locationRef.current = userLocation
 
@@ -393,9 +403,35 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
     const onUp = () => {
       if (!isDragging) return
       isDragging = false
-      setTimeout(() => {
-        if (!sceneState.current.zooming && !sceneState.current.continentActive && Math.abs(velY) < 0.001) velY = 0.0025
-      }, 1500)
+      if (discoverModeRef.current) {
+        // Só ativa spin se houve swipe real (downPos ainda existe = não houve movimento suficiente = toque simples)
+        if (downPos !== null) {
+          // Foi toque simples — ignorar
+          velY = 0.0025
+        } else {
+          const speed = Math.abs(velY)
+          if (speed > 0.001) {
+            velY = (velY > 0 ? 1 : -1) * Math.max(Math.abs(velY) * 6, 0.18)
+            velX = 0
+            rotX = 0
+            sceneState.current.discoverSpinning = true
+            sceneState.current.discoverRotApplied = false
+            sceneState.current.discoverLanding = false
+            camera.position.z = 8.5
+            sceneState.current.targetZ = null
+            if (!sceneState.current.discoverTarget && discoverCountriesRef2.current.length > 0) {
+              const countries = discoverCountriesRef2.current
+              sceneState.current.discoverTarget = countries[Math.floor(Math.random() * countries.length)]
+            }
+          } else {
+            velY = 0.0025
+          }
+        }
+      } else {
+        setTimeout(() => {
+          if (!sceneState.current.zooming && !sceneState.current.continentActive && Math.abs(velY) < 0.001) velY = 0.0025
+        }, 1500)
+      }
     }
 
     const dom = renderer.domElement
@@ -571,9 +607,50 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
       velX *= 0.94
       if (!isDragging && !sceneState.current.targetRot && !sceneState.current.zooming && !sceneState.current.continentActive && velY !== 0) {
         rotY += velY
-        velY = Math.abs(velY) > 0.0026 ? velY * 0.96 : 0.0025
+        if (discoverModeRef.current && sceneState.current.discoverSpinning) {
+          velY *= 0.985
+          velX = 0
+          rotX = 0
+          const absVel = Math.abs(velY)
+          // A partir de 60% da velocidade inicial (~0.1), começar a aplicar targetRot e zoom
+          if (absVel < 0.10 && sceneState.current.discoverTarget && !sceneState.current.discoverLanding) {
+            // Calcular targetRot para o país (usa searchCountry internamente)
+            if (!sceneState.current.discoverRotApplied) {
+              sceneState.current.discoverRotApplied = true
+              // Chamar searchCountry para obter as coordenadas e aplicar targetRot
+              sceneState.current.searchCountry?.(sceneState.current.discoverTarget)
+            }
+          }
+          // Zoom progressivo enquanto abranda
+          if (absVel < 0.08) {
+            const progress = Math.min(1, (0.08 - absVel) / 0.07)
+            const zTarget = 8.5 - progress * 3.5
+            camera.position.z += (zTarget - camera.position.z) * 0.05
+          }
+          // Quando parou, notificar
+          if (absVel < 0.005 && !sceneState.current.discoverLanding) {
+            sceneState.current.discoverLanding = true
+            sceneState.current.discoverSpinning = false
+            sceneState.current.discoverRotApplied = false
+            velY = 0
+            const pick = sceneState.current.discoverTarget
+            sceneState.current.discoverTarget = null
+            setTimeout(() => {
+              sceneState.current.discoverLanding = false
+              // Usar ref externa se disponível (evita problema do React.memo)
+              const fn = externalDiscoverRef?.current || onDiscoverLandRef.current
+              fn?.(pick)
+            }, 50)
+          }
+        } else if (!discoverModeRef.current) {
+          velY = Math.abs(velY) > 0.0026 ? velY * 0.96 : 0.0025
+        } else {
+          velY = 0.0025
+          rotX = Math.max(-Math.PI / 5, Math.min(Math.PI / 5, rotX))
+        }
       } else if (isDragging) {
         rotY += velY
+        if (discoverModeRef.current) rotX = 0
       }
       rotX = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, rotX))
       const tr = sceneState.current.targetRot
@@ -607,12 +684,21 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
     }
     tick()
 
+    const pickNextDiscoverCountry = () => {
+      const countries = discoverCountriesRef2.current
+      if (countries.length > 0) {
+        sceneState.current.discoverTarget = countries[Math.floor(Math.random() * countries.length)]
+      }
+    }
+    pickNextDiscoverCountry()
+
     sceneState.current.resetFeed = () => {
       sceneState.current.targetZ = 8.5
       sceneState.current.targetRot = null
       sceneState.current.zooming = false
       sceneState.current.continentActive = false
       velY = 0.0025
+      pickNextDiscoverCountry()
     }
     onSceneReady?.(sceneState.current.resetFeed)
 
@@ -704,126 +790,6 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
         'Swaziland': 'eSwatini',
       }
 
-      // Piscar só o país encontrado — redesenhar textura alternando a cor
-      if (geojsonRef.current) {
-        let pulseCount = 0
-        const buildPulseTexture = (highlight: boolean) => {
-          const visited = new Set(visitedRef.current)
-          const W = 4096, H = 2048
-          const canvas = document.createElement('canvas')
-          canvas.width = W; canvas.height = H
-          const ctx = canvas.getContext('2d')!
-          const project = (lo: number, la: number): [number, number] => [
-            (lo + 180) / 360 * W, (90 - la) / 180 * H
-          ]
-          ctx.fillStyle = '#B8D4E8'
-          ctx.fillRect(0, 0, W, H)
-          geojsonRef.current.features.forEach((f: any) => {
-            const name = f.properties?.name || ''
-            const isVisited = visited.has(name)
-            const isTarget = name === feature.properties.name
-            const [eH, eS, eL] = hexToHsl(globeColorRef?.current || '#B8860B')
-            const eVisited = `hsl(${eH}, ${Math.min(100, eS + 20)}%, ${Math.min(90, eL + 45)}%)`
-            const fillColor = isTarget ? (highlight ? '#FFFFFF' : eVisited) : isVisited ? eVisited : '#D4C9B0'
-            const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates
-            polys.forEach((poly: any) => {
-              ctx.beginPath()
-              poly.forEach((ring: any) => {
-                let penDown = false
-                for (let i = 0; i < ring.length; i++) {
-                  const [x, y] = project(ring[i][0], ring[i][1])
-                  if (!penDown) { ctx.moveTo(x, y); penDown = true }
-                  else {
-                    const [px] = project(ring[i-1][0], ring[i-1][1])
-                    if (Math.abs(x - px) > W / 2) ctx.moveTo(x, y)
-                    else ctx.lineTo(x, y)
-                  }
-                }
-                ctx.closePath()
-              })
-              ctx.fillStyle = fillColor
-              ctx.fill('evenodd')
-              ctx.strokeStyle = isVisited ? 'rgba(180,120,0,0.85)' : '#B8A898'
-              ctx.lineWidth = isVisited ? 3.5 : 1.6
-              ctx.stroke()
-            })
-          })
-          return canvas
-        }
-
-        // Piscar redesenhando ambas as texturas
-        const buildReliefPulse = (highlight: boolean) => {
-          const visited = new Set(visitedRef.current)
-          const W = 4096, H = 2048
-          const canvas = document.createElement('canvas')
-          canvas.width = W; canvas.height = H
-          const ctx = canvas.getContext('2d')!
-          ctx.clearRect(0, 0, W, H)
-          const project = (lo: number, la: number): [number, number] => [
-            (lo + 180) / 360 * W, (90 - la) / 180 * H
-          ]
-          geojsonRef.current.features.forEach((f: any) => {
-            const name = f.properties?.name || ''
-            const isTarget = name === feature.properties.name
-            const bdName = NAME_MAP[name] || name
-            const isVisited = visited.has(bdName)
-            if (!isVisited && !isTarget) return
-            const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates
-            polys.forEach((poly: any) => {
-              ctx.beginPath()
-              poly.forEach((ring: any) => {
-                let penDown = false
-                for (let i = 0; i < ring.length; i++) {
-                  const [x, y] = project(ring[i][0], ring[i][1])
-                  if (!penDown) { ctx.moveTo(x, y); penDown = true }
-                  else {
-                    const [px] = project(ring[i-1][0], ring[i-1][1])
-                    if (Math.abs(x - px) > W / 2) ctx.moveTo(x, y)
-                    else ctx.lineTo(x, y)
-                  }
-                }
-                ctx.closePath()
-              })
-              ctx.fillStyle = isTarget ? (highlight ? '#FFFFFF' : '#FFE066') : '#FFE066'
-              ctx.fill('evenodd')
-              ctx.strokeStyle = isTarget && highlight ? '#fff' : 'rgba(180,120,0,0.85)'
-              ctx.lineWidth = isTarget ? 4 : 3.5
-              ctx.stroke()
-            })
-          })
-          return canvas
-        }
-
-        // Aplicar imediatamente antes do interval para evitar flash inicial
-        const applyPulse = (highlight: boolean) => {
-          const tex = new THREE.CanvasTexture(buildReliefPulse(highlight))
-          tex.minFilter = THREE.LinearFilter
-          tex.magFilter = THREE.LinearFilter
-          tex.generateMipmaps = false
-          if (reliefMesh?.material) {
-            reliefMesh.material.dispose()
-            reliefMesh.material = new THREE.MeshPhongMaterial({
-              map: tex, alphaMap: tex, transparent: true, depthWrite: false,
-              shininess: 40,
-              emissive: new THREE.Color(0xFFD93D),
-              emissiveMap: tex, emissiveIntensity: 0.3,
-            })
-            reliefMesh.material.needsUpdate = true
-          }
-        }
-        applyPulse(true) // aplicar imediatamente
-
-        const pulse = setInterval(() => {
-          pulseCount++
-          const highlight = pulseCount % 2 === 0
-          applyPulse(highlight)
-          if (pulseCount > 8) {
-            clearInterval(pulse)
-            sceneState.current.rebakeTexture?.()
-          }
-        }, 350)
-      }
-      
       return true
     }
     

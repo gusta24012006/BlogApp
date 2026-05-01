@@ -231,7 +231,7 @@ export default function SearchPage() {
 
       {isEmpty && (
         <div style={{ textAlign: 'center', padding: '48px 20px' }}>
-          <div style={{ fontSize: 15, color: '#2A2520', fontFamily: "'Playfair Display', Georgia, serif", marginBottom: 6 }}>
+          <div style={{ fontSize: 15, color: '#2A2520', fontFamily: "'DM Sans', system-ui", marginBottom: 6 }}>
             Sem resultados para "{query}"
           </div>
           <div style={{ fontSize: 13, color: '#8A7A65' }}>Tenta um país, username ou "@user país"</div>
@@ -269,7 +269,7 @@ export default function SearchPage() {
               {flag}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#2A2520', fontFamily: "'Playfair Display', Georgia, serif" }}>{blog.title}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#2A2520', fontFamily: "'DM Sans', system-ui" }}>{blog.title}</div>
               <div style={{ fontSize: 12, color: '#8A7A65', marginTop: 2 }}>{blog.country_name} · @{blog.profiles?.username}</div>
             </div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C8BAA8" strokeWidth="1.8" strokeLinecap="round">

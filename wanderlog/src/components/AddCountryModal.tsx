@@ -98,9 +98,11 @@ interface AddCountryModalProps {
   onClose: () => void
   onAdd: (country: { code: string; name: string }) => void
   onRemove: (countryName: string) => void
+  onCountryVisitedClick?: (country: { code: string; name: string }) => void
+  onCountryNewClick?: (country: { code: string; name: string }) => void
 }
 
-export default function AddCountryModal({ userId, visitedCountries, onClose, onAdd, onRemove }: AddCountryModalProps) {
+export default function AddCountryModal({ userId, visitedCountries, onClose, onAdd, onRemove, onCountryVisitedClick, onCountryNewClick }: AddCountryModalProps) {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState<string | null>(null)
   const [toast, setToast] = useState<{ code: string; name: string } | null>(null)
@@ -113,6 +115,10 @@ export default function AddCountryModal({ userId, visitedCountries, onClose, onA
   )
 
   const handleToggle = async (country: { code: string; name: string }) => {
+    if (visitedSet.has(country.name) && onCountryVisitedClick) {
+      onCountryVisitedClick(country)
+      return
+    }
     setLoading(country.code)
     if (visitedSet.has(country.name)) {
       const { error } = await supabase
@@ -134,6 +140,17 @@ export default function AddCountryModal({ userId, visitedCountries, onClose, onA
         setToast(null)
       }
     } else {
+      if (onCountryNewClick) {
+        const { error } = await supabase
+          .from('countries_visited')
+          .insert({ user_id: userId, country_code: country.code, country_name: country.name })
+        if (!error) {
+          onAdd(country)
+          onCountryNewClick(country)
+        }
+        setLoading(null)
+        return
+      }
       const { error } = await supabase
         .from('countries_visited')
         .insert({ user_id: userId, country_code: country.code, country_name: country.name })

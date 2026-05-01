@@ -99,7 +99,7 @@ export default function LoginPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 6 }}>
           <div style={{ width: 44, height: 44 }} dangerouslySetInnerHTML={{ __html: LOGO_SVG }} />
           <div style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
+            fontFamily: "'DM Sans', system-ui",
             fontSize: 38, fontWeight: 700, color: '#2A2520',
             letterSpacing: -1.5, lineHeight: 1,
           }}>
