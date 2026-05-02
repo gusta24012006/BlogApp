@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 const FONTS = `@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');`
@@ -22,6 +22,8 @@ export default function UserCountryBlogPage() {
   const router = useRouter()
   const username = params.username as string
   const countryCode = params.code as string
+  const searchParams = useSearchParams()
+  const from = searchParams.get('from')
 
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -75,7 +77,10 @@ export default function UserCountryBlogPage() {
         borderBottom: '1px solid rgba(184,168,152,0.15)',
         padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 12,
       }}>
-        <button onClick={() => router.replace(`/user/${username}`)} style={{
+        <button onClick={() => {
+          if (from === 'feed') router.push('/feed')
+          else router.replace(`/user/${username}`)
+        }} style={{
           background: 'none', border: 'none', cursor: 'pointer',
           color: '#8A7A65', display: 'flex', alignItems: 'center',
         }}>

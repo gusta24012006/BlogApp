@@ -55,6 +55,33 @@ interface GlobeProps {
   discoverCountries?: string[]
   onDiscoverLand?: (countryName: string) => void
   onDiscoverLandRef?: React.MutableRefObject<((name: string) => void) | null>
+  noGlow?: boolean
+}
+
+const GEO_TO_BD: Record<string, string> = {
+  'USA': 'United States',
+  'United Republic of Tanzania': 'Tanzania',
+  'Bosnia and Herzegovina': 'Bosnia and Herz.',
+  'Central African Republic': 'Central African Rep.',
+  'Democratic Republic of the Congo': 'Dem. Rep. Congo',
+  'Republic of the Congo': 'Congo',
+  'Dominican Republic': 'Dominican Rep.',
+  'Equatorial Guinea': 'Eq. Guinea',
+  'Czech Republic': 'Czechia',
+  'Macedonia': 'North Macedonia',
+  'South Sudan': 'S. Sudan',
+  'Guinea Bissau': 'Guinea-Bissau',
+  'East Timor': 'Timor-Leste',
+  'England': 'United Kingdom',
+  'Swaziland': 'eSwatini',
+  'Cabo Verde': 'Cape Verde',
+}
+
+function resolveVisited(visitedNames: Set<string>, geoName: string): boolean {
+  if (visitedNames.has(geoName)) return true
+  const mapped = GEO_TO_BD[geoName]
+  if (mapped && visitedNames.has(mapped)) return true
+  return false
 }
 
 function buildReliefTexture(geojson: any, visitedNames: Set<string>, globeColor: string = '#B8860B') {
@@ -72,7 +99,7 @@ function buildReliefTexture(geojson: any, visitedNames: Set<string>, globeColor:
   ]
 
   geojson.features.forEach((f: any) => {
-    if (!visitedNames.has(f.properties.name)) return
+    if (!resolveVisited(visitedNames, f.properties.name)) return
     const polys = f.geometry.type === 'Polygon'
       ? [f.geometry.coordinates]
       : f.geometry.coordinates
@@ -165,13 +192,13 @@ function buildEquirectTexture(geojson: any, visitedNames: Set<string>, globeColo
   }
 
   geojson.features.forEach((f: any) => {
-    if (!visitedNames.has(f.properties.name)) {
+    if (!resolveVisited(visitedNames, f.properties.name)) {
       drawFeature(f, '#D4C9B0', '#B8A898', 1.6)
     }
   })
 
   geojson.features.forEach((f: any) => {
-    if (visitedNames.has(f.properties.name)) {
+    if (resolveVisited(visitedNames, f.properties.name)) {
       const [vH, vS, vL] = hexToHsl(globeColor)
       const visitedFill = `hsl(${vH}, ${Math.min(100, vS + 20)}%, ${Math.min(90, vL + 45)}%)`
       const visitedStroke = `hsl(${vH}, ${Math.min(100, vS + 10)}%, ${Math.min(85, vL + 30)}%)`
@@ -187,7 +214,7 @@ function buildEquirectTexture(geojson: any, visitedNames: Set<string>, globeColo
 }
 
 
-export default function Globe({ visitedCountries, activeContinent, onContinentClick, onCountryClick, userLocation, feedMode, feedTab, onSceneReady, onSearchReady, onResetReady, globeColor, discoverMode, discoverCountries, onDiscoverLand, onDiscoverLandRef: externalDiscoverRef }: GlobeProps) {
+export default function Globe({ visitedCountries, activeContinent, onContinentClick, onCountryClick, userLocation, feedMode, feedTab, onSceneReady, onSearchReady, onResetReady, globeColor, discoverMode, discoverCountries, onDiscoverLand, onDiscoverLandRef: externalDiscoverRef, highlightCountries, noGlow }: GlobeProps) {
   const mountRef = useRef<HTMLDivElement>(null)
   const sceneState = useRef<any>({})
   const geojsonRef = useRef<any>(null)
@@ -197,6 +224,10 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
   feedModeRef.current = feedMode
   const globeColorRef = useRef(globeColor || '#B8860B')
   globeColorRef.current = globeColor || '#B8860B'
+  const highlightRef = useRef(highlightCountries || [])
+  highlightRef.current = highlightCountries || []
+  const noGlowRef = useRef(noGlow || false)
+  noGlowRef.current = noGlow || false
   const discoverModeRef = useRef(discoverMode)
   discoverModeRef.current = discoverMode
   const discoverCountriesRef2 = useRef(discoverCountries || [])
@@ -385,7 +416,21 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
       velX = 0
       // NÃO modificar velY aqui — só parar no onUp se foi clique
     }
+    let lastPinchDist = 0
     const onMove = (e: any) => {
+      // Pinch to zoom com 2 dedos
+      if (e.touches && e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX
+        const dy = e.touches[0].clientY - e.touches[1].clientY
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        if (lastPinchDist > 0) {
+          const delta = (lastPinchDist - dist) * 0.02
+          camera.position.z = Math.max(3.5, Math.min(12, camera.position.z + delta))
+        }
+        lastPinchDist = dist
+        return
+      }
+      lastPinchDist = 0
       if (!isDragging) return
       const t = e.touches ? e.touches[0] : e
       const dx = t.clientX - lastX
@@ -468,7 +513,7 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
       'Czech Republic': 'Czechia',
       'Macedonia': 'North Macedonia',
       'South Sudan': 'S. Sudan',
-      'United States of America': 'United States',
+      'USA': 'United States',
       'Guinea Bissau': 'Guinea-Bissau',
       'Ivory Coast': 'Ivory Coast',
       'East Timor': 'Timor-Leste',
@@ -673,8 +718,8 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
           sceneState.current.targetZ = null
         }
       }
-      // Pulsação no feedMode
-      if (feedMode && reliefMesh?.material) {
+      // Pulsação no feedMode (só se não estiver em modo sem glow)
+      if (feedMode && !noGlowRef.current && reliefMesh?.material) {
         const pulse = 0.3 + Math.sin(Date.now() * 0.002) * 0.2
         ;(reliefMesh.material as any).emissiveIntensity = pulse
       }
@@ -717,7 +762,7 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
         'Czechia': 'Czech Republic',
         'North Macedonia': 'Macedonia',
         'S. Sudan': 'South Sudan',
-        'United States': 'United States of America',
+        'United States': 'USA',
         'Guinea-Bissau': 'Guinea Bissau',
         'Timor-Leste': 'East Timor',
         'United Kingdom': 'England',
@@ -726,12 +771,14 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
       }
       const searchName = BD_TO_GEO[countryName] || countryName
       
-      // Encontrar o país pelo nome — match exacto primeiro, depois startsWith
+      // Encontrar o país pelo nome — match exacto primeiro, depois startsWith, depois includes
       const searchLower = searchName.toLowerCase()
       const feature = geojsonRef.current.features.find((f: any) =>
         (f.properties?.name || '').toLowerCase() === searchLower
       ) || geojsonRef.current.features.find((f: any) =>
         (f.properties?.name || '').toLowerCase().startsWith(searchLower)
+      ) || geojsonRef.current.features.find((f: any) =>
+        searchLower.startsWith((f.properties?.name || '').toLowerCase())
       )
       
       if (!feature) return false
@@ -783,7 +830,7 @@ export default function Globe({ visitedCountries, activeContinent, onContinentCl
         'Czech Republic': 'Czechia',
         'Macedonia': 'North Macedonia',
         'South Sudan': 'S. Sudan',
-        'United States of America': 'United States',
+        'USA': 'United States',
         'Guinea Bissau': 'Guinea-Bissau',
         'East Timor': 'Timor-Leste',
         'England': 'United Kingdom',
