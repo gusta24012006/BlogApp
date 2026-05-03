@@ -76,7 +76,7 @@ export default function LoginPage() {
     if (isSignUp) {
       const { error } = await supabase.auth.signUp({ email, password })
       if (error) setError(getErrorMessage(error.message))
-      else window.location.href = '/dashboard'
+      else window.location.href = '/onboarding'
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) setError(getErrorMessage(error.message))

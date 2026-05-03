@@ -1,197 +1,149 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 
-// Converte hex para HSL
-function hexToHsl(hex: string): [number, number, number] {
-  const r = parseInt(hex.slice(1, 3), 16) / 255
-  const g = parseInt(hex.slice(3, 5), 16) / 255
-  const b = parseInt(hex.slice(5, 7), 16) / 255
-  const max = Math.max(r, g, b), min = Math.min(r, g, b)
-  let h = 0, s = 0
-  const l = (max + min) / 2
-  if (max !== min) {
-    const d = max - min
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6
-    else if (max === g) h = ((b - r) / d + 2) / 6
-    else h = ((r - g) / d + 4) / 6
-  }
-  return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)]
-}
+const FONTS = `@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');`
 
-// Calcula a cor de relevo (países visitados) a partir da cor base
-export function getReliefColor(globeColor: string): string {
-  const [h, s, l] = hexToHsl(globeColor)
-  const newS = Math.min(100, s + 20)
-  const newL = Math.min(90, l + 45)
-  return `hsl(${h}, ${newS}%, ${newL}%)`
-}
-
-// Paleta de cores do globo — o utilizador escolhe a base, o relevo é calculado automaticamente
-const GLOBE_COLORS = [
-  { name: 'Saara',        value: '#A0522D' },
-  { name: 'Marrakech',    value: '#B8560A' },
-  { name: 'Bali',         value: '#9B2335' },
-  { name: 'Tóquio',       value: '#8B3A62' },
-  { name: 'Rajastão',     value: '#7B3F00' },
-  { name: 'Havana',       value: '#8B4500' },
-  { name: 'Mediterrâneo', value: '#1B4F8A' },
-  { name: 'Maldivas',     value: '#0D7C8A' },
-  { name: 'Islândia',     value: '#2C4A7C' },
-  { name: 'Noruega',      value: '#1A3A5C' },
-  { name: 'Ártico',       value: '#2D5A7A' },
-  { name: 'Amazónia',     value: '#1A5C3A' },
-  { name: 'Obsidiana',    value: '#2D2D2D' },
-  { name: 'Granito',      value: '#4A4A5A' },
-  { name: 'Malaquite',    value: '#2D5A40' },
-  { name: 'Âmbar',        value: '#C17800' },
+const SLIDES = [
+  {
+    image: 'https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=600&q=80',
+    title: 'Bem-vindo à Volta',
+    subtitle: 'O teu diário de viagens pessoal, num globo interativo.',
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=80',
+    title: 'Explora histórias de todo o mundo',
+    subtitle: 'Segue viajantes e descobre os seus blogs em cada país que visitaram.',
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1521295121783-8a321d551ad2?w=600&q=80',
+    title: 'Gira para descobrir',
+    subtitle: 'Dá um spin no globo para descobrir histórias de qualquer parte do mundo.',
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1530521954074-e64f6810b32d?w=600&q=80',
+    title: 'Mergulha num país',
+    subtitle: 'Carrega num país para ler os blogs de quem lá esteve.',
+  },
 ]
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const [selectedColor, setSelectedColor] = useState(GLOBE_COLORS[0])
-  const [username, setUsername] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [step, setStep] = useState(1) // 1: boas vindas, 2: cor do globo
+  const [current, setCurrent] = useState(0)
+  const [opacity, setOpacity] = useState(1)
+  const [animating, setAnimating] = useState(false)
 
-  useEffect(() => {
-    const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.replace('/login'); return }
-      const { data } = await supabase.from('profiles').select('username, globe_color').eq('id', user.id).single()
-      if (data?.globe_color) { router.replace('/dashboard'); return } // já fez onboarding
-      if (data?.username) setUsername(data.username)
-    }
-    load()
-  }, [router])
-
-  const handleFinish = async () => {
-    setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    await supabase.from('profiles').update({ globe_color: selectedColor.value }).eq('id', user.id)
-    router.replace('/dashboard')
+  const goTo = (index: number) => {
+    if (animating) return
+    setAnimating(true)
+    setOpacity(0)
+    setTimeout(() => {
+      setCurrent(index)
+      setOpacity(1)
+      setAnimating(false)
+    }, 250)
   }
+
+  const next = () => {
+    if (current < SLIDES.length - 1) goTo(current + 1)
+    else finish()
+  }
+
+  const finish = () => {
+    setOpacity(0)
+    setTimeout(() => router.push('/dashboard'), 250)
+  }
+
+  const slide = SLIDES[current]
 
   return (
     <div style={{
       minHeight: '100vh', background: '#F5F0E8',
-      fontFamily: 'system-ui, sans-serif',
+      fontFamily: "'DM Sans', system-ui, sans-serif",
       display: 'flex', flexDirection: 'column',
     }}>
+      <style>{FONTS}</style>
 
-      {step === 1 && (
+      {/* Logo */}
+      <div style={{ padding: '52px 24px 0', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ fontSize: 22, fontWeight: 700, color: '#2A2520', letterSpacing: -0.5 }}>
+          Vol<span style={{ color: '#FFB800' }}>ta</span>
+        </div>
+      </div>
+
+      {/* Imagem */}
+      <div style={{
+        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '32px 24px 0',
+        opacity, transition: 'opacity 0.25s ease',
+      }}>
         <div style={{
-          flex: 1, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          padding: '40px 32px', textAlign: 'center',
+          width: '100%', maxWidth: 320, aspectRatio: '1',
+          borderRadius: 24, overflow: 'hidden',
+          boxShadow: '0 8px 40px rgba(42,37,32,0.12)',
         }}>
-          {/* Logo */}
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: 36, fontWeight: 700, color: '#2A2520', marginBottom: 8 }}>
-            <span style={{ color: '#FFB800' }}>volta</span>
-          </div>
-          <div style={{ fontSize: 13, color: '#8A7A65', marginBottom: 48 }}>
-            O mundo à espera das tuas histórias
-          </div>
-
-          {/* Globe preview */}
-          <div style={{
-            width: 180, height: 180, borderRadius: '50%',
-            background: `radial-gradient(circle at 35% 35%, ${getReliefColor(selectedColor.value)}, ${selectedColor.value})`,
-            boxShadow: `0 20px 60px ${selectedColor.value}40`,
-            marginBottom: 48, transition: 'all 0.4s ease',
-          }} />
-
-          <div style={{ fontSize: 22, fontWeight: 600, color: '#2A2520', fontFamily: 'Georgia, serif', marginBottom: 8 }}>
-            Bem-vindo{username ? `, ${username}` : ''}
-          </div>
-          <div style={{ fontSize: 14, color: '#6B5D4A', lineHeight: 1.7, marginBottom: 48, maxWidth: 280 }}>
-            Regista as tuas viagens, partilha as tuas histórias e descobre o mundo através dos olhos de outros viajantes.
-          </div>
-
-          <button
-            onClick={() => setStep(2)}
-            style={{
-              width: '100%', maxWidth: 320, padding: '14px', borderRadius: 100,
-              background: '#FFB800', border: 'none', color: '#2A2520',
-              fontWeight: 600, fontSize: 15, cursor: 'pointer',
-            }}
-          >
-            Começar
-          </button>
+          <img
+            src={slide.image}
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
         </div>
-      )}
+      </div>
 
-      {step === 2 && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '52px 24px 32px' }}>
-          {/* Header */}
-          <div style={{ marginBottom: 32 }}>
-            <div style={{ fontFamily: 'Georgia, serif', fontSize: 24, fontWeight: 600, color: '#2A2520', marginBottom: 8 }}>
-              O teu globo
-            </div>
-            <div style={{ fontSize: 14, color: '#6B5D4A', lineHeight: 1.6 }}>
-              Escolhe a cor que representa a tua forma de viajar. Podes mudar nas definições a qualquer momento.
-            </div>
-          </div>
-
-          {/* Preview do globo */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 40 }}>
-            <div style={{
-              width: 140, height: 140, borderRadius: '50%',
-              background: `radial-gradient(circle at 35% 35%, ${getReliefColor(selectedColor.value)}, ${selectedColor.value})`,
-              boxShadow: `0 16px 48px ${selectedColor.value}50`,
+      {/* Dots */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 28 }}>
+        {SLIDES.map((_, i) => (
+          <div
+            key={i}
+            onClick={() => goTo(i)}
+            style={{
+              width: i === current ? 20 : 6,
+              height: 6, borderRadius: 3,
+              background: i === current ? '#FFB800' : 'rgba(42,37,32,0.2)',
               transition: 'all 0.3s ease',
-            }} />
-          </div>
-
-          {/* Grid de cores */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12,
-            marginBottom: 40,
-          }}>
-            {GLOBE_COLORS.map(color => (
-              <button
-                key={color.value}
-                onClick={() => setSelectedColor(color)}
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                  background: 'none', border: 'none', cursor: 'pointer', padding: '8px 4px',
-                }}
-              >
-                <div style={{
-                  width: 52, height: 52, borderRadius: '50%',
-                  background: `radial-gradient(circle at 35% 35%, ${getReliefColor(color.value)}, ${color.value})`,
-                  border: selectedColor.value === color.value ? `3px solid #2A2520` : '3px solid transparent',
-                  boxShadow: selectedColor.value === color.value ? `0 4px 16px ${color.value}60` : 'none',
-                  transition: 'all 0.2s',
-                }} />
-                <span style={{
-                  fontSize: 10, color: selectedColor.value === color.value ? '#2A2520' : '#8A7A65',
-                  fontWeight: selectedColor.value === color.value ? 600 : 400,
-                }}>
-                  {color.name}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={handleFinish}
-            disabled={loading}
-            style={{
-              width: '100%', padding: '14px', borderRadius: 100,
-              background: '#FFB800', border: 'none', color: '#2A2520',
-              fontWeight: 600, fontSize: 15, cursor: 'pointer',
-              opacity: loading ? 0.7 : 1,
+              cursor: 'pointer',
             }}
-          >
-            {loading ? 'A guardar...' : 'Explorar o mundo'}
-          </button>
+          />
+        ))}
+      </div>
+
+      {/* Texto */}
+      <div style={{
+        padding: '24px 28px 0',
+        opacity, transition: 'opacity 0.25s ease',
+        textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 26, fontWeight: 700, color: '#2A2520', lineHeight: 1.2, marginBottom: 10 }}>
+          {slide.title}
         </div>
-      )}
+        <div style={{ fontSize: 15, color: '#6B5D4A', lineHeight: 1.6 }}>
+          {slide.subtitle}
+        </div>
+      </div>
+
+      {/* Botões */}
+      <div style={{ padding: '28px 28px 48px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <button onClick={next} style={{
+          width: '100%', padding: '14px', borderRadius: 100,
+          background: '#FFB800', border: 'none',
+          color: '#2A2520', fontWeight: 700, fontSize: 16,
+          cursor: 'pointer', fontFamily: "'DM Sans', system-ui",
+          boxShadow: '0 4px 14px rgba(255,184,0,0.35)',
+        }}>
+          {current < SLIDES.length - 1 ? 'Próximo' : 'Começar'}
+        </button>
+        {current < SLIDES.length - 1 && (
+          <button onClick={finish} style={{
+            width: '100%', padding: '14px', borderRadius: 100,
+            background: 'transparent', border: 'none',
+            color: '#8A7A65', fontWeight: 500, fontSize: 15,
+            cursor: 'pointer', fontFamily: "'DM Sans', system-ui",
+          }}>
+            Saltar
+          </button>
+        )}
+      </div>
     </div>
   )
 }

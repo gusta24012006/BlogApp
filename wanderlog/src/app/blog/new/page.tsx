@@ -1,5 +1,7 @@
 'use client'
 
+import { sanitizeHtml } from '@/lib/sanitize'
+
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -238,7 +240,7 @@ function BlogNewContent() {
                 Sem conteúdo ainda
               </div>
             ) : blocks.map(b => {
-              if (b.type === 'text') return <div key={b.id} dangerouslySetInnerHTML={{ __html: b.content || '' }} style={{ marginBottom: 24, lineHeight: 1.7 }} />
+              if (b.type === 'text') return <div key={b.id} dangerouslySetInnerHTML={{ __html: sanitizeHtml(b.content || '') }} style={{ marginBottom: 24, lineHeight: 1.7 }} />
               if (b.type === 'image' && b.url) return (
                 <div key={b.id} style={{ marginBottom: 24, textAlign: (b.imagePosition === 'center' ? 'center' : b.imagePosition === 'right' ? 'right' : 'left') as any }}>
                   <img src={b.url} style={{ width: `${b.imageWidth || 100}%`, borderRadius: 10 }} alt={b.caption || ''} />
@@ -248,7 +250,7 @@ function BlogNewContent() {
               if (b.type === 'imagetext') return (
                 <div key={b.id} style={{ display: 'flex', gap: 16, marginBottom: 24, flexDirection: (b.imagePosition === 'right' ? 'row-reverse' : 'row') as any, alignItems: 'flex-start' }}>
                   {b.url && <img src={b.url} style={{ width: `${b.imageWidth || 40}%`, borderRadius: 10, flexShrink: 0 }} alt="" />}
-                  <div dangerouslySetInnerHTML={{ __html: b.content || '' }} style={{ flex: 1, lineHeight: 1.7 }} />
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(b.content || '') }} style={{ flex: 1, lineHeight: 1.7 }} />
                 </div>
               )
               if (b.type === 'video' && b.url) {

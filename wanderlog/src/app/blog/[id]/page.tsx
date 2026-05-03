@@ -1,5 +1,7 @@
 'use client'
 
+import { sanitizeHtml } from '@/lib/sanitize'
+
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -41,7 +43,7 @@ interface Post {
 function renderBlock(block: Block, theme: Theme) {
   switch (block.type) {
     case 'text':
-      return <div key={block.id} dangerouslySetInnerHTML={{ __html: block.content || '' }}
+      return <div key={block.id} dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.content || '') }}
         style={{ lineHeight: 1.7, marginBottom: 24 }} />
     case 'image':
       return block.url ? (
@@ -54,7 +56,7 @@ function renderBlock(block: Block, theme: Theme) {
       return (block as any).url || block.content ? (
         <div key={block.id} style={{ display: 'flex', gap: 20, marginBottom: 24, alignItems: 'flex-start', flexDirection: ((block as any).imagePosition === 'right' ? 'row-reverse' : 'row') as any }}>
           {(block as any).url && <img src={(block as any).url} style={{ width: `${(block as any).imageWidth || 40}%`, borderRadius: 10, flexShrink: 0, objectFit: 'cover' }} alt="" />}
-          <div dangerouslySetInnerHTML={{ __html: block.content || '' }} style={{ flex: 1, lineHeight: 1.7 }} />
+          <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.content || '') }} style={{ flex: 1, lineHeight: 1.7 }} />
         </div>
       ) : null
     case 'video':

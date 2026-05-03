@@ -1,5 +1,9 @@
 'use client'
 
+import { sanitizeHtml } from '@/lib/sanitize'
+
+import { loadScript } from '@/lib/loadScript'
+
 import React, { useEffect, useState, useRef, memo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -13,15 +17,6 @@ const CONTINENT_PT: Record<string, string> = {
   'Europe': 'Europa', 'Asia': 'Ásia', 'Africa': 'África',
   'N. America': 'N. América', 'S. América': 'S. América', 'Oceania': 'Oceânia',
   'S. America': 'S. América',
-}
-
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return }
-    const s = document.createElement('script')
-    s.src = src; s.onload = () => resolve(); s.onerror = reject
-    document.head.appendChild(s)
-  })
 }
 
 interface Post {
@@ -215,6 +210,7 @@ export default function FeedPage() {
   }, [activeAuthor])
 
   const handleCountryClick = useCallback(async (countryName: string) => {
+    if (!currentUserId) return
     const targetUserId = activeAuthor?.id || null
 
     // Buscar posts não vistos deste país
@@ -553,7 +549,7 @@ export default function FeedPage() {
           {blogExpanded && postBlocks.length > 0 && (
             <div style={{ marginTop: 8 }}>
               {postBlocks.map((block: any) => {
-                if (block.type === 'text') return <div key={block.id} dangerouslySetInnerHTML={{ __html: block.content || '' }} style={{ lineHeight: 1.7, marginBottom: 20, fontSize: 15, color: activePost.theme?.text || '#2A2520' }} />
+                if (block.type === 'text') return <div key={block.id} dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.content || '') }} style={{ lineHeight: 1.7, marginBottom: 20, fontSize: 15, color: activePost.theme?.text || '#2A2520' }} />
                 if (block.type === 'image' && block.url) return (
                   <div key={block.id} style={{ marginBottom: 20 }}>
                     <img src={block.url} style={{ width: '100%', borderRadius: 10 }} alt={block.caption || ''} />

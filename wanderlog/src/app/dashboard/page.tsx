@@ -1,5 +1,7 @@
 'use client'
 
+import { loadScript } from '@/lib/loadScript'
+
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -10,17 +12,6 @@ import Navbar from '@/components/Navbar'
 const Globe = dynamic(() => import('@/components/Globe'), { ssr: false })
 
 const CONTINENT_NAMES = ['Europe', 'Asia', 'Africa', 'N. America', 'S. America', 'Oceania']
-
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return }
-    const s = document.createElement('script')
-    s.src = src
-    s.onload = () => resolve()
-    s.onerror = reject
-    document.head.appendChild(s)
-  })
-}
 
 export default function Dashboard() {
   const [profile, setProfile] = useState<any>(null)
