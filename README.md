@@ -2,8 +2,8 @@
 
 # 🌍 Volta
 
-**Uma rede social de viagens à volta de um globo 3D.**
-Roda o globo, escolhe um país e lê as histórias de quem lá esteve.
+**A travel social network built around a 3D globe.**
+Spin the globe, pick a country and read the stories of people who have been there.
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
@@ -11,134 +11,134 @@ Roda o globo, escolhe um país e lê as histórias de quem lá esteve.
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)](https://blog-app-j68i.vercel.app)
 
-**[▶ Abrir a demo](https://blog-app-j68i.vercel.app)**
+**[▶ Open the live demo](https://blog-app-j68i.vercel.app)**
 
 </div>
 
-![Globo interativo do Volta](docs/globo.gif)
+![Volta's interactive globe](docs/globo.gif)
 
-## Sobre o projeto
+## About
 
-Os blogs de viagem estão normalmente organizados por data ou por autor. No **Volta** estão organizados **pelo mapa**: cada utilizador marca no globo os países que visitou e escreve sobre eles, e quem explora a app roda o globo e carrega num país para ler os blogs desse destino.
+Travel blogs are usually organised by date or by author. In **Volta** they are organised **by the map**: each user marks the countries they have visited on the globe and writes about them, and anyone exploring the app spins the globe and clicks a country to read the blogs about that destination.
 
-É um projeto pessoal, desenvolvido a solo, para aprender a construir uma aplicação web completa: do frontend com gráficos 3D à base de dados, autenticação e publicação.
+It is a personal project, built solo, to learn how to ship a complete web application: from a 3D frontend to the database, authentication and deployment.
 
-> **Estado:** em desenvolvimento. As funcionalidades principais estão a funcionar; as que faltam estão em [Próximos passos](#próximos-passos). A interface da aplicação está em português.
+> **Status:** in development. The core features work; the missing ones are listed under [Roadmap](#roadmap). The app interface is in Portuguese.
 
-## Experimenta
+## Try it
 
-Abre a **[demo](https://blog-app-j68i.vercel.app)** e entra com a conta de demonstração, sem precisares de te registar:
+Open the **[live demo](https://blog-app-j68i.vercel.app)** and sign in with the demo account, no registration needed:
 
 | Email | Password |
 |---|---|
 | `demo@volta.app` | `Demo2000` |
 
-No **feed**, no separador **Encontrar**, há blogs de outros utilizadores para explorar: roda o globo, carrega num país que brilhe e abre os posts.
+In the **feed**, under the **Encontrar** (Discover) tab, there are blogs from other users to explore: spin the globe, click a glowing country and open the posts.
 
-> Os blogs publicados na demo são **conteúdo de teste**, criados para mostrar as funcionalidades da aplicação.
+> The blogs published in the demo are **test content**, created to showcase the app's features.
 
-## Funcionalidades
+## Features
 
-**Globo 3D**
-- Globo interativo (rodar, zoom, carregar num país) com os países visitados destacados
-- No feed, os países com blogs por ler brilham; a cor do globo de cada perfil é personalizável
+**3D globe**
+- Interactive globe (spin, zoom, click a country) with visited countries highlighted
+- In the feed, countries with unread blogs glow; each profile's globe colour is customisable
 
-**Blogs de viagem**
-- Editor por blocos: texto rico, imagem, imagem com texto, vídeo do YouTube, música do Spotify e separadores
-- Blocos reordenáveis por arrastar e largar, e temas de cor e letra por post
-- Rascunhos e publicação; blogs agrupados por país
+**Travel blogs**
+- Block-based editor: rich text, image, image with text, YouTube video, Spotify music and dividers
+- Drag-and-drop block reordering, plus colour and font themes per post
+- Drafts and publishing; blogs grouped by country
 
-**Rede social**
-- Seguir utilizadores, perfis privados e lista de seguidores
-- Feed com dois separadores: **A seguir** (com "stories" de quem segues) e **Encontrar** (blogs de toda a comunidade)
-- Gostos, comentários e notificações
-- Registo de posts já vistos, para dar prioridade ao que ainda não leste
+**Social**
+- Follow users, private profiles and follower lists
+- Feed with two tabs: **Following** (with "stories" from people you follow) and **Discover** (blogs from the whole community)
+- Likes, comments and notifications
+- Viewed-post tracking, so unread posts are shown first
 
-**Conta**
-- Registo, login e onboarding de novos utilizadores
-- Edição do perfil, alteração de email e password, e definições de privacidade
+**Account**
+- Sign-up, login and onboarding for new users
+- Profile editing, email and password changes, and privacy settings
 
 ![Feed](docs/feed.png)
-![Editor de blogs](docs/editor.png)
+![Blog editor](docs/editor.png)
 
-## Stack
+## Tech stack
 
-| Camada | Tecnologias |
+| Layer | Technologies |
 |---|---|
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4 |
-| Globo 3D | Three.js, react-globe.gl, TopoJSON |
-| Editor | TipTap (texto rico), dnd-kit (arrastar e largar) |
-| Backend | Supabase: PostgreSQL, autenticação e armazenamento de ficheiros |
-| Publicação | Vercel |
+| 3D globe | Three.js, react-globe.gl, TopoJSON |
+| Editor | TipTap (rich text), dnd-kit (drag and drop) |
+| Backend | Supabase: PostgreSQL, authentication and file storage |
+| Deployment | Vercel |
 
-## Como funciona
+## How it works
 
-A aplicação não tem um servidor próprio: o frontend em Next.js fala diretamente com o **Supabase**, que trata da base de dados PostgreSQL, da autenticação e do armazenamento das imagens.
+The app has no custom backend server: the Next.js frontend talks directly to **Supabase**, which handles the PostgreSQL database, authentication and image storage.
 
 ```
 Browser (Next.js + React)
-   │  supabase-js (chave pública)
+   │  supabase-js (public anon key)
    ▼
-Supabase ── PostgreSQL (dados + políticas RLS)
-         ├─ Auth (contas e sessões)
-         └─ Storage (imagens dos posts e de perfil)
+Supabase ── PostgreSQL (data + RLS policies)
+         ├─ Auth (accounts and sessions)
+         └─ Storage (post and profile images)
 ```
 
-**Modelo de dados**
+**Data model**
 
-| Tabela | Guarda |
+| Table | Stores |
 |---|---|
-| `profiles` | Utilizadores: nome, foto, bio, cor do globo, privacidade |
-| `posts` | Blogs: país, título, blocos de conteúdo, tema, estado de publicação |
-| `countries_visited` | Países marcados por cada utilizador |
-| `follows` | Quem segue quem |
-| `likes`, `comments` | Interações nos posts |
-| `notifications` | Notificações de novos seguidores, gostos e comentários |
-| `post_views` | Posts já vistos por cada utilizador |
+| `profiles` | Users: name, photo, bio, globe colour, privacy |
+| `posts` | Blogs: country, title, content blocks, theme, publication status |
+| `countries_visited` | Countries marked by each user |
+| `follows` | Who follows whom |
+| `likes`, `comments` | Post interactions |
+| `notifications` | New follower, like and comment notifications |
+| `post_views` | Posts already viewed by each user |
 
-## Decisões técnicas
+## Technical decisions
 
-- **Vídeo e música por embed, sem armazenamento próprio.** Guardar vídeos no Supabase saía do plano gratuito. Os blocos de vídeo e música guardam apenas o link do YouTube ou do Spotify e mostram o leitor embebido, por isso o custo de armazenamento é zero.
-- **Sanitização do conteúdo dos posts.** O texto rico é guardado como HTML e mostrado com `dangerouslySetInnerHTML`. Para evitar ataques XSS, todo o HTML passa pelo **DOMPurify** com uma lista restrita de tags e atributos, e os links só aceitam `http(s)`, `mailto` e caminhos relativos.
-- **Segurança na base de dados.** Como o browser acede ao Supabase com a chave pública, as permissões são garantidas por **políticas Row Level Security (RLS)** no PostgreSQL: cada utilizador só pode alterar os seus próprios dados.
+- **Video and music via embeds, with no file storage.** Storing videos in Supabase would exceed the free plan. Video and music blocks only store the YouTube or Spotify link and render the embedded player, so storage cost is zero.
+- **Sanitising post content.** Rich text is stored as HTML and rendered with `dangerouslySetInnerHTML`. To prevent XSS attacks, all HTML goes through **DOMPurify** with a strict allowlist of tags and attributes, and links only accept `http(s)`, `mailto` and relative paths.
+- **Database-level security.** Since the browser accesses Supabase with the public key, permissions are enforced by **Row Level Security (RLS) policies** in PostgreSQL: each user can only modify their own data.
 
-## Correr localmente
+## Running locally
 
-Requisitos: Node.js 20+ e um projeto [Supabase](https://supabase.com) (o plano gratuito chega).
+Requirements: Node.js 20+ and a [Supabase](https://supabase.com) project (the free plan is enough).
 
 ```bash
 git clone https://github.com/gusta24012006/BlogApp.git
 cd BlogApp/wanderlog
 npm install
-cp .env.example .env.local   # preencher com o URL e a anon key do projeto Supabase
+cp .env.example .env.local   # fill in your Supabase project URL and anon key
 npm run dev
 ```
 
-A aplicação fica disponível em [http://localhost:3000](http://localhost:3000).
+The app runs at [http://localhost:3000](http://localhost:3000).
 
-## Estrutura
+## Project structure
 
 ```
-wanderlog/                 aplicação Next.js
-├─ src/app/                páginas: feed, dashboard, blog, perfil, pesquisa, definições…
-├─ src/components/         Globe, editor de blocos, navbar, ações dos posts
-└─ src/lib/                clientes Supabase e sanitização de HTML
-design/prototipo/          protótipo inicial do ecrã de perfil
-docs/                      imagens do README
+wanderlog/                 Next.js app
+├─ src/app/                pages: feed, dashboard, blog, profile, search, settings…
+├─ src/components/         Globe, block editor, navbar, post actions
+└─ src/lib/                Supabase clients and HTML sanitisation
+design/prototipo/          early prototype of the profile screen
+docs/                      README images
 ```
 
-## Próximos passos
+## Roadmap
 
-- [x] Publicar a demo no Vercel
-- [ ] Exportar o esquema da base de dados e as políticas RLS para o repositório
-- [ ] No modo "Encontrar", os blogs já vistos deixam de aparecer e o país deixa de brilhar quando não tem mais nada por ver
-- [ ] Botão "Surpreende-me": o globo gira e faz zoom até um país aleatório com um blog por ver
-- [ ] Configurar um serviço de email próprio para a confirmação de contas
-- [ ] Dividir o componente `Globe.tsx` em componentes mais pequenos
-- [ ] Testes automáticos
+- [x] Deploy the demo to Vercel
+- [ ] Export the database schema and RLS policies to the repository
+- [ ] In Discover mode, hide blogs already viewed and stop a country glowing once it has nothing left to read
+- [ ] "Surprise me" button: the globe spins and zooms into a random country with an unread blog
+- [ ] Set up a custom email service for account confirmation
+- [ ] Split the `Globe.tsx` component into smaller components
+- [ ] Automated tests
 
-## Autor
+## Author
 
-**Gustavo Monteiro**, estudante de Engenharia Informática e Computação na FEUP (Universidade do Porto)
+**Gustavo Monteiro**, Informatics and Computing Engineering student at FEUP (University of Porto)
 
 [LinkedIn](https://www.linkedin.com/in/gustavomonteiro06) · [GitHub](https://github.com/gusta24012006) · gustavotibe@gmail.com
