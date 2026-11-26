@@ -73,6 +73,8 @@ design/prototipo/     protótipo inicial do ecrã de perfil (HTML/JSX)
 ## Próximos passos
 
 - [x] Publicar a demo no Vercel
+- [ ] No modo "Encontrar", os blogs já vistos deixam de aparecer e o país deixa de brilhar quando não tem mais nada por ver
+- [ ] Botão "Surpreende-me": o globo gira e faz zoom até um país aleatório com um blog por ver
 - [ ] Configurar SMTP próprio para confirmação de conta por email
 - [ ] Exportar esquema e políticas RLS para o repositório
 - [ ] Dividir o componente `Globe.tsx` em componentes mais pequenos
