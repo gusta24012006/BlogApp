@@ -15,6 +15,8 @@
 
 No **feed** há blogs de outros utilizadores para explorar: roda o globo, escolhe um país e abre os posts.
 
+> Os blogs publicados na demo são **conteúdo de teste**, criados para mostrar as funcionalidades da aplicação.
+
 <!-- Substituir por capturas de ecrã / GIF reais da aplicação -->
 <!-- ![Globo interativo](docs/globo.gif) -->
 <!-- ![Editor de posts](docs/editor.png) -->
