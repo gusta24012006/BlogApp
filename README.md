@@ -4,8 +4,16 @@
 
 **Volta** é uma rede social de viagens construída à volta de um **globo 3D interativo**. Cada utilizador marca os países que visitou e escreve blogs de viagem com um editor por blocos (texto, imagens, vídeo, música). Os outros utilizadores exploram o globo, carregam num país e veem os posts sobre esse destino.
 
-🔗 **Demo:** _[a adicionar — link do Vercel]_
+🔗 **Demo:** [blog-app-j68i.vercel.app](https://blog-app-j68i.vercel.app)
 📌 **Estado:** em desenvolvimento (projeto pessoal)
+
+### Experimenta sem criar conta
+
+| Email | Password |
+|---|---|
+| `demo@volta.app` | `Demo2000` |
+
+No **feed** há blogs de outros utilizadores para explorar: roda o globo, escolhe um país e abre os posts.
 
 <!-- Substituir por capturas de ecrã / GIF reais da aplicação -->
 <!-- ![Globo interativo](docs/globo.gif) -->
@@ -62,7 +70,8 @@ design/prototipo/     protótipo inicial do ecrã de perfil (HTML/JSX)
 
 ## Próximos passos
 
-- [ ] Publicar a demo no Vercel
+- [x] Publicar a demo no Vercel
+- [ ] Configurar SMTP próprio para confirmação de conta por email
 - [ ] Exportar esquema e políticas RLS para o repositório
 - [ ] Dividir o componente `Globe.tsx` em componentes mais pequenos
 - [ ] Testes automáticos
