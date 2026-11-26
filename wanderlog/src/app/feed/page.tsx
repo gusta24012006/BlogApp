@@ -383,7 +383,6 @@ export default function FeedPage() {
             noGlow={!!activeAuthor}
             activeContinent={activeContinent}
             onContinentClickRef={onContinentClickRef}
-            globeKey={globeKey}
           />
         )}
       </div>

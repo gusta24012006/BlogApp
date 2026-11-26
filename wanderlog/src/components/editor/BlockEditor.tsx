@@ -35,7 +35,7 @@ export interface Block {
   artistName?: string
   coverUrl?: string
   imageWidth?: number
-  imagePosition?: 'left' | 'right'
+  imagePosition?: 'left' | 'center' | 'right'
 }
 
 interface BlockEditorProps {

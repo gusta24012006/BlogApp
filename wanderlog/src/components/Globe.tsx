@@ -55,6 +55,7 @@ interface GlobeProps {
   discoverCountries?: string[]
   onDiscoverLand?: (countryName: string) => void
   onDiscoverLandRef?: React.MutableRefObject<((name: string) => void) | null>
+  highlightCountries?: string[]
   noGlow?: boolean
 }
 
