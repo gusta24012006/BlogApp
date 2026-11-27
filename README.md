@@ -15,7 +15,7 @@ Spin the globe, pick a country and read the stories of people who have been ther
 
 </div>
 
-![Volta's interactive globe](docs/globo.gif)
+![A user's profile: visited countries highlighted on the 3D globe](docs/perfil.png)
 
 ## About
 
@@ -58,8 +58,7 @@ In the **feed**, under the **Encontrar** (Discover) tab, there are blogs from ot
 - Sign-up, login and onboarding for new users
 - Profile editing, email and password changes, and privacy settings
 
-![Feed](docs/feed.png)
-![Blog editor](docs/editor.png)
+![Feed: explore other users' blogs by spinning the globe](docs/feed.png)
 
 ## Tech stack
 
