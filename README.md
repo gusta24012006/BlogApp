@@ -38,8 +38,7 @@ Open the **[live demo](https://blog-app-j68i.vercel.app)** and sign in with the 
 Then, in the **feed**:
 
 1. Under **Encontrar** (Discover), spin the globe, click a glowing country and open a blog.
-2. Follow the blog's author with the **Seguir** button.
-3. Switch to **A seguir** (Following) and select the author in the stories bar: the globe becomes their personal globe.
+2. Under **A seguir** (Following), tap the profile picture of the person the demo account follows: the globe turns into their personal globe.
 
 > The blogs published in the demo are **test content**, created to showcase the app's features.
 
