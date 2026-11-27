@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import dynamic from 'next/dynamic'
 import Navbar from '@/components/Navbar'
+import PostActions from '@/components/PostActions'
 import { CONTINENT_NAMES, CONTINENT_PT } from '@/lib/continents'
 
 const Globe = dynamic(() => import('@/components/Globe'), { ssr: false })
@@ -563,6 +564,12 @@ export default function FeedPage() {
                 }
                 return null
               })}
+            </div>
+          )}
+
+          {blogExpanded && (
+            <div style={{ margin: '8px -20px 0' }}>
+              <PostActions key={activePost.id} postId={activePost.id} userId={currentUserId || undefined} />
             </div>
           )}
         </div>
