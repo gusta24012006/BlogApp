@@ -46,7 +46,7 @@ In the **feed**, under the **Encontrar** (Discover) tab, there are blogs from ot
 **Travel blogs**
 - Block-based editor: rich text, image, image with text, YouTube video, Spotify music and dividers
 - Drag-and-drop block reordering, plus colour and font themes per post
-- Drafts and publishing; blogs grouped by country
+- Drafts, publishing and editing; blogs grouped by country
 
 **Social**
 - Follow users, private profiles and follower lists
