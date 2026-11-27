@@ -7,11 +7,11 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import dynamic from 'next/dynamic'
 import AddCountryModal from '@/components/AddCountryModal'
+import { CONTINENT_NAMES, CONTINENT_PT } from '@/lib/continents'
 import Navbar from '@/components/Navbar'
 
 const Globe = dynamic(() => import('@/components/Globe'), { ssr: false })
 
-const CONTINENT_NAMES = ['Europe', 'Asia', 'Africa', 'N. America', 'S. America', 'Oceania']
 
 export default function Dashboard() {
   const [profile, setProfile] = useState<any>(null)
@@ -112,7 +112,7 @@ export default function Dashboard() {
     <div style={{
       width: '100%', minHeight: '100vh', background: '#F5F0E8',
       display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, sans-serif',
-      paddingBottom: 80,
+      paddingBottom: 130,
     }}>
       {/* Fontes */}
       <style>{FONTS + `
@@ -253,7 +253,7 @@ export default function Dashboard() {
               color: isActive ? '#F5F0E8' : '#6B5D4A',
               fontFamily: "'DM Sans', system-ui",
               transition: 'all 0.15s',
-            }}>{c === 'N. America' ? 'N. América' : c === 'S. America' ? 'S. América' : c}</button>
+            }}>{c === 'Todos' ? 'Todos' : CONTINENT_PT[c]}</button>
           )
         })}
       </div>
