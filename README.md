@@ -41,7 +41,9 @@ In the **feed**, under the **Encontrar** (Discover) tab, there are blogs from ot
 
 **3D globe**
 - Interactive globe (spin, zoom, click a country) with visited countries highlighted
-- In the feed, countries with unread blogs glow; each profile's globe colour is customisable
+- Continent filters that rotate the globe to each continent, plus country search
+- Each user customises the colour of their own globe
+- In the feed, countries with unread blogs glow
 
 **Travel blogs**
 - Block-based editor: rich text, image, image with text, YouTube video, Spotify music and dividers
@@ -50,7 +52,8 @@ In the **feed**, under the **Encontrar** (Discover) tab, there are blogs from ot
 
 **Social**
 - Follow users, private profiles and follower lists
-- Feed with two tabs: **Following** (with "stories" from people you follow) and **Discover** (blogs from the whole community)
+- Feed with two tabs: **Following** and **Discover** (blogs from the whole community)
+- In **Following**, a stories bar shows the people you follow; selecting one switches the feed globe to **their personalised globe**, with only their countries and blogs
 - Likes, comments and notifications
 - Viewed-post tracking, so unread posts are shown first
 
