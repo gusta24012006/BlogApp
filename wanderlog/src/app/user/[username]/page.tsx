@@ -3,15 +3,11 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { CONTINENT_NAMES, CONTINENT_PT } from '@/lib/continents'
 import dynamic from 'next/dynamic'
 
 const Globe = dynamic(() => import('@/components/Globe'), { ssr: false })
 
-const CONTINENT_NAMES = ['Europe', 'Asia', 'Africa', 'N. America', 'S. America', 'Oceania']
-const CONTINENT_PT: Record<string, string> = {
-  'Europe': 'Europa', 'Asia': 'Ásia', 'Africa': 'África',
-  'N. America': 'N. América', 'S. America': 'S. América', 'Oceania': 'Oceânia',
-}
 
 const FONTS = `@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');`
 

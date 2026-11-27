@@ -9,15 +9,10 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import dynamic from 'next/dynamic'
 import Navbar from '@/components/Navbar'
+import { CONTINENT_NAMES, CONTINENT_PT } from '@/lib/continents'
 
 const Globe = dynamic(() => import('@/components/Globe'), { ssr: false })
 
-const CONTINENT_NAMES = ['Europe', 'Asia', 'Africa', 'N. America', 'S. America', 'Oceania']
-const CONTINENT_PT: Record<string, string> = {
-  'Europe': 'Europa', 'Asia': 'Ásia', 'Africa': 'África',
-  'N. America': 'N. América', 'S. América': 'S. América', 'Oceania': 'Oceânia',
-  'S. America': 'S. América',
-}
 
 interface Post {
   id: string
