@@ -108,8 +108,7 @@ export default function BlogByIdPage() {
         .from('posts')
         .select('*, profiles(username, display_name, avatar_url)')
         .eq('id', postId)
-        .eq('published', true)
-        .maybeSingle()
+        .maybeSingle() // o RLS só devolve rascunhos ao próprio autor
 
       if (!data) { router.push('/feed'); return }
       setPost(data)
@@ -166,10 +165,10 @@ export default function BlogByIdPage() {
         </span>
         {isOwner && (
           <button
-            onClick={() => router.push(`/blog/country/${post.country_code}`)}
+            onClick={() => router.push(`/blog/new?edit=${post.id}`)}
             style={{ padding: '7px 16px', borderRadius: 100, background: '#FFB800', border: 'none', fontSize: 12, fontWeight: 600, color: '#2A2520', cursor: 'pointer', fontFamily: "'DM Sans', system-ui" }}
           >
-            Editar
+            {post.published ? 'Editar' : 'Editar rascunho'}
           </button>
         )}
       </div>
