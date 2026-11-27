@@ -32,8 +32,12 @@ const DEFAULT_THEME: Theme = {
 function BlogNewContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const countryCode = searchParams.get('country') || ''
-  const countryName = searchParams.get('name') || ''
+  // ?edit=<id> abre um blog existente no editor; sem ele, cria um blog novo para ?country=&name=
+  const editId = searchParams.get('edit')
+  const [countryCode, setCountryCode] = useState(searchParams.get('country') || '')
+  const [countryName, setCountryName] = useState(searchParams.get('name') || '')
+  const [wasPublished, setWasPublished] = useState(false)
+  const [loadingPost, setLoadingPost] = useState(!!editId)
 
   const [title, setTitle] = useState('')
   const [blocks, setBlocks] = useState<Block[]>([])
@@ -44,33 +48,55 @@ function BlogNewContent() {
   const [showPreview, setShowPreview] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.push('/login'); return }
       setUserId(user.id)
+      if (!editId) return
+
+      const { data: post } = await supabase
+        .from('posts')
+        .select('title, blocks, theme, country_code, country_name, published')
+        .eq('id', editId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (!post) { router.push('/dashboard'); return }
+      setTitle(post.title || '')
+      setBlocks(post.blocks || [])
+      setTheme({ ...DEFAULT_THEME, ...(post.theme || {}) })
+      setCountryCode(post.country_code)
+      setCountryName(post.country_name)
+      setWasPublished(!!post.published)
+      setLoadingPost(false)
     })
-  }, [router])
+  }, [router, editId])
 
   const handleSave = async (publish: boolean) => {
     if (!title.trim()) { alert('Adiciona um título ao blog'); return }
     setSaving(true)
 
-    const { error } = await supabase.from('posts').insert({
-      user_id: userId,
-      country_code: countryCode,
-      country_name: countryName,
-      title: title.trim(),
-      blocks: blocks,
-      theme: theme,
-      published: publish,
-    })
+    const content = { title: title.trim(), blocks, theme, published: publish }
+    const { error } = editId
+      ? await supabase.from('posts')
+          .update({ ...content, updated_at: new Date().toISOString() })
+          .eq('id', editId).eq('user_id', userId)
+      : await supabase.from('posts').insert({
+          ...content, user_id: userId, country_code: countryCode, country_name: countryName,
+        })
 
     setSaving(false)
     if (error) { alert('Erro ao guardar: ' + error.message); return }
-    router.push('/dashboard')
+    router.push(editId ? `/blog/${editId}` : '/dashboard')
   }
 
   const flag = countryCode.toUpperCase().replace(/./g, (c: string) =>
     String.fromCodePoint(c.charCodeAt(0) + 127397)
+  )
+
+  if (loadingPost) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F5F0E8', color: '#8A7A65', fontFamily: 'Georgia, serif' }}>
+      A carregar blog...
+    </div>
   )
 
   return (
@@ -133,7 +159,7 @@ function BlogNewContent() {
               background: 'transparent', border: '1px solid rgba(184,168,152,0.4)',
               color: '#8A7A65',
             }}
-          >Guardar rascunho</button>
+          >{editId && wasPublished ? 'Passar a rascunho' : 'Guardar rascunho'}</button>
 
           <button
             onClick={() => handleSave(true)}
@@ -142,7 +168,7 @@ function BlogNewContent() {
               padding: '7px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 12,
               background: '#FFB800', border: 'none', color: '#2A2520', fontWeight: 600,
             }}
-          >{saving ? 'A publicar...' : 'Publicar'}</button>
+          >{saving ? 'A guardar...' : editId && wasPublished ? 'Guardar alterações' : 'Publicar'}</button>
         </div>
       </div>
 
